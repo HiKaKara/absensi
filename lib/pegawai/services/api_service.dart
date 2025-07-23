@@ -12,6 +12,45 @@ class ApiService {
   // 10.0.2.2 adalah localhost untuk emulator Android.
   static const String _baseUrl = 'http://10.14.72.51:8080/api/';
 
+
+Future<List<dynamic>> fetchAllEmployees() async {
+    final url = Uri.parse('${_baseUrl}admin/employees'); // Panggil endpoint admin
+    try {
+      final response = await http.get(url).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        // Coba baca pesan error dari server jika ada
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['messages']['error'] ?? 'Gagal memuat data pegawai.');
+      }
+    } on TimeoutException catch (_) {
+      throw Exception('Koneksi ke server timeout.');
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  Future<void> updateUserRole(int userId, String role) async {
+    final url = Uri.parse('${_baseUrl}admin/employees/update_role/$userId');
+    try {
+      final response = await http.put(
+        url,
+        headers: {'Content-Type': 'application/json; charset=UTF-8'},
+        body: jsonEncode({'role': role}),
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode != 200) {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['messages']['error'] ?? 'Gagal memperbarui role.');
+      }
+    } on TimeoutException catch (_) {
+      throw Exception('Koneksi ke server timeout.');
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
 // lib/services/api_service.dart
 Future<void> validateWfoIp() async {
   final url = Uri.parse('${_baseUrl}attendance/validate-wfo-ip');

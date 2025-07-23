@@ -1,21 +1,21 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:absensi/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:absensi/pegawai/services/api_service.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-class WfaCheckInScreen extends StatefulWidget {
-  const WfaCheckInScreen({super.key});
+class WfoCheckOutScreen extends StatefulWidget {
+  const WfoCheckOutScreen({super.key});
 
   @override
-  State<WfaCheckInScreen> createState() => _WfaCheckInScreenState();
+  State<WfoCheckOutScreen> createState() => _WfoCheckOutScreenState();
 }
 
-class _WfaCheckInScreenState extends State<WfaCheckInScreen> {
+class _WfoCheckOutScreenState extends State<WfoCheckOutScreen> {
   // BARU: Satu Future untuk mengelola semua proses inisialisasi
   late Future<void> _initializationFuture;
 
@@ -131,8 +131,25 @@ class _WfaCheckInScreenState extends State<WfaCheckInScreen> {
     }
   }
 
-  Future<void> _submitCheckIn() async {
+  Future<void> _submitCheckOut() async {
     if (_capturedImage == null || _currentPosition == null || _isSubmitting) return;
+
+    // VALIDASI JARAK KHUSUS WFO
+    const double officeLatitude = -6.342621240893616;
+    const double officeLongitude = 106.78842019412906;
+    const double maxDistanceInMeters = 100;
+
+    final distance = Geolocator.distanceBetween(
+      officeLatitude, officeLongitude,
+      _currentPosition!.latitude, _currentPosition!.longitude,
+    );
+
+    if (distance > maxDistanceInMeters) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Anda di luar jangkauan kantor. Jarak Anda ${distance.round()} meter.'), backgroundColor: Colors.red),
+      );
+      return;
+    }
 
     setState(() => _isSubmitting = true);
     try {
@@ -140,13 +157,10 @@ class _WfaCheckInScreenState extends State<WfaCheckInScreen> {
       final userId = prefs.getInt('user_id');
       if (userId == null) throw Exception("Sesi berakhir, mohon login ulang.");
 
-      final response = await _apiService.submitCheckIn(
-        userId: userId,
-        imageFile: File(_capturedImage!.path),
-        position: _currentPosition!,
-        address: _currentAddress,
-        shift: _currentShift,
-        workLocationType: 'WFA',
+      final response = await _apiService.submitCheckOut(
+        userId,
+        File(_capturedImage!.path),
+        _currentPosition!,
       );
       
       if(mounted){
@@ -164,7 +178,7 @@ class _WfaCheckInScreenState extends State<WfaCheckInScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Check In (WFA)')),
+      appBar: AppBar(title: const Text('Check Out (WFO)')),
       body: FutureBuilder<void>(
         future: _initializationFuture,
         builder: (context, snapshot) {
@@ -194,13 +208,13 @@ class _WfaCheckInScreenState extends State<WfaCheckInScreen> {
             );
           }
 
-          return _buildCheckInForm();
+          return _buildCheckOutForm();
         },
       ),
     );
   }
 
-  Widget _buildCheckInForm() {
+  Widget _buildCheckOutForm() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -273,15 +287,15 @@ class _WfaCheckInScreenState extends State<WfaCheckInScreen> {
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: _submitCheckIn,
+            onPressed: _submitCheckOut,
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
-              backgroundColor: Colors.indigo,
+              backgroundColor: Colors.red, // Warna berbeda untuk check out
               foregroundColor: Colors.white,
             ),
             child: _isSubmitting
                 ? const CircularProgressIndicator(color: Colors.white)
-                : const Text('SUBMIT CHECK IN', style: TextStyle(fontSize: 16)),
+                : const Text('SUBMIT CHECK OUT', style: TextStyle(fontSize: 16)),
           ),
         ],
       ),

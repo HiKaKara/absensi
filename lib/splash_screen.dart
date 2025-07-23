@@ -1,7 +1,8 @@
+import 'package:absensi/admin/admin_dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:absensi/screens/dashboard_screen.dart';
-import 'package:absensi/screens/selection_screen.dart';
+import 'package:absensi/pegawai/screens/dashboard_screen.dart';
+import 'package:absensi/selection_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -26,6 +27,17 @@ class _SplashScreenState extends State<SplashScreen> {
     final userId = prefs.getInt('user_id');
     final loginTimestamp = prefs.getInt('login_timestamp');
     final loginType = prefs.getString('login_type');
+    final userRole = prefs.getString('user_role');
+
+if (userId != null) {
+  if (userRole == 'Admin') { // Ganti 'Admin' sesuai dengan nilai di database
+    _navigateTo(const AdminDashboardScreen()); // Arahkan ke Dashboard Admin
+  } else {
+    _navigateTo(const DashboardScreen()); // Arahkan ke Dashboard Pegawai
+  }
+} else {
+  _navigateTo(const SelectionScreen());
+}
 
     // Jika salah satu data sesi tidak ada, anggap belum login
     if (userId == null || loginTimestamp == null || loginType == null) {

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:absensi/screens/dashboard/history_screen.dart';
-import 'package:absensi/screens/dashboard/home_screen.dart';
-import 'package:absensi/screens/dashboard/over_time_screen.dart';
-import 'package:absensi/screens/dashboard/profile_screen.dart';
+import 'package:absensi/pegawai/screens/dashboard/history_screen.dart';
+import 'package:absensi/pegawai/screens/dashboard/home_screen.dart';
+import 'package:absensi/pegawai/screens/dashboard/over_time_screen.dart';
+import 'package:absensi/pegawai/screens/dashboard/profile_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});

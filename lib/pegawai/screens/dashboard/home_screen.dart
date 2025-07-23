@@ -2,13 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:absensi/widgets/choice_card.dart';
+import 'package:absensi/pegawai/widgets/choice_card.dart';
 
 // --- IMPORT YANG DIPERBAIKI SESUAI STRUKTUR FOLDER BARU ---
-import 'package:absensi/screens/dashboard/wfo/wfo_check_in_screen.dart';
-import 'package:absensi/screens/dashboard/wfo/wfo_check_out_screen.dart';
-import 'package:absensi/screens/dashboard/wfa/wfa_check_in_screen.dart';
-import 'package:absensi/screens/dashboard/wfa/wfa_check_out_screen.dart';
+import 'package:absensi/pegawai/screens/dashboard/wfo/wfo_check_in_screen.dart';
+import 'package:absensi/pegawai/screens/dashboard/wfo/wfo_check_out_screen.dart';
+import 'package:absensi/pegawai/screens/dashboard/wfa/wfa_check_in_screen.dart';
+import 'package:absensi/pegawai/screens/dashboard/wfa/wfa_check_out_screen.dart';
 // ---------------------------------------------------------
 
 class HomeScreen extends StatefulWidget {

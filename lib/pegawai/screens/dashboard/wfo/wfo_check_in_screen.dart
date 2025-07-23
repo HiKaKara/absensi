@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:absensi/services/api_service.dart';
+import 'package:absensi/pegawai/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:geolocator/geolocator.dart';

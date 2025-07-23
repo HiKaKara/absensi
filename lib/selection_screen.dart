@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:absensi/widgets/choice_card.dart';
+import 'package:absensi/pegawai/widgets/choice_card.dart';
 
 class SelectionScreen extends StatelessWidget {
   const SelectionScreen({super.key});

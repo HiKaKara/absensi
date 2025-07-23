@@ -1,9 +1,9 @@
 // lib/main.dart
 
 import 'package:flutter/material.dart';
-import 'package:absensi/screens/splash_screen.dart';
-import 'package:absensi/screens/wfa_login_screen.dart';
-import 'package:absensi/screens/wfo_login_screen.dart';
+import 'package:absensi/splash_screen.dart';
+import 'package:absensi/pegawai/screens/login/wfa_login_screen.dart';
+import 'package:absensi/pegawai/screens/login/wfo_login_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'; // <-- TAMBAHKAN IMPORT INI
 

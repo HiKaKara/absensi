@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:absensi/widgets/choice_card.dart'; // Pastikan path ini benar
-import 'package:absensi/screens/dashboard/history/attendance_history_screen.dart';
-import 'package:absensi/screens/dashboard/history/overtime_history_screen.dart';
+import 'package:absensi/pegawai/widgets/choice_card.dart'; // Pastikan path ini benar
+import 'package:absensi/pegawai/screens/dashboard/history/attendance_history_screen.dart';
+import 'package:absensi/pegawai/screens/dashboard/history/overtime_history_screen.dart';
 
 class HistoryScreen extends StatelessWidget {
   const HistoryScreen({super.key});

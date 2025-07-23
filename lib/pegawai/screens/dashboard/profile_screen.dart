@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:absensi/services/api_service.dart';
-import 'package:absensi/screens/selection_screen.dart'; // Import halaman awal
+import 'package:absensi/pegawai/services/api_service.dart';
+import 'package:absensi/selection_screen.dart'; // Import halaman awal
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});

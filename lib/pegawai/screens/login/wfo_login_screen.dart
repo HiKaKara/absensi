@@ -1,16 +1,16 @@
+import 'package:absensi/pegawai/screens/dashboard_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:absensi/services/api_service.dart';
-import 'package:absensi/screens/dashboard_screen.dart';
+import 'package:absensi/pegawai/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class WfaLoginScreen extends StatefulWidget {
-  const WfaLoginScreen({super.key});
+class WfoLoginScreen extends StatefulWidget {
+  const WfoLoginScreen({super.key});
 
   @override
-  State<WfaLoginScreen> createState() => _WfaLoginScreenState();
+  State<WfoLoginScreen> createState() => _WfoLoginScreenState();
 }
 
-class _WfaLoginScreenState extends State<WfaLoginScreen> {
+class _WfoLoginScreenState extends State<WfoLoginScreen> {
   final ApiService _apiService = ApiService();
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
@@ -19,59 +19,51 @@ class _WfaLoginScreenState extends State<WfaLoginScreen> {
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
+      // Langkah 1: Validasi IP terlebih dahulu
+      await _apiService.validateWfoIp();
+      
+      // Langkah 2: Jika IP valid, lanjutkan ke proses login
       final response = await _apiService.login(
         _emailController.text,
         _passwordController.text,
       );
-
-      // Pastikan respons dari API valid sebelum melanjutkan
+  
       if (response.containsKey('user') && response['user']['id'] != null) {
-        final userIdInt = int.parse(response['user']['id'].toString());
+        final userId = int.parse(response['user']['id'].toString());
         final prefs = await SharedPreferences.getInstance();
 
         // --- PERUBAHAN DI SINI ---
         // Simpan semua data sesi yang diperlukan
-        await prefs.setInt('user_id', userIdInt);
+        await prefs.setInt('user_id', userId);
+        await prefs.setString('user_role', response['user']['role']);
         await prefs.setInt('login_timestamp', DateTime.now().millisecondsSinceEpoch);
-        await prefs.setString('login_type', 'wfa'); // Tandai sebagai login WFA
+        await prefs.setString('login_type', 'wfo'); // Tandai sebagai login WFO
         // -------------------------
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Login WFA Berhasil!'),
-              backgroundColor: Colors.green,
-            ),
+            const SnackBar(content: Text('Login Berhasil!'), backgroundColor: Colors.green),
           );
-          
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const DashboardScreen()),
           );
         }
       } else {
-        // Lemparkan error jika format respons tidak sesuai
         throw Exception('Respons dari server tidak valid.');
       }
+
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll("Exception: ", "")),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(e.toString().replaceAll("Exception: ", "")), backgroundColor: Colors.red),
         );
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -79,7 +71,7 @@ class _WfaLoginScreenState extends State<WfaLoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Login Work from Anywhere')),
+      appBar: AppBar(title: const Text('Login Work from Office')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -87,7 +79,7 @@ class _WfaLoginScreenState extends State<WfaLoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-               TextFormField(
+              TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(labelText: 'Email'),
                 validator: (value) => value!.isEmpty ? 'Email tidak boleh kosong' : null,
