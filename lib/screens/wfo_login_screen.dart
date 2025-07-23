@@ -1,5 +1,7 @@
+import 'package:absensi/screens/dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:absensi/services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class WfoLoginScreen extends StatefulWidget {
   const WfoLoginScreen({super.key});
@@ -17,41 +19,51 @@ class _WfoLoginScreenState extends State<WfoLoginScreen> {
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      // 1. Validasi IP terlebih dahulu
+      // Langkah 1: Validasi IP terlebih dahulu
       await _apiService.validateWfoIp();
       
-      // 2. Jika IP valid, lanjutkan ke proses login
-      await _apiService.login(
+      // Langkah 2: Jika IP valid, lanjutkan ke proses login
+      final response = await _apiService.login(
         _emailController.text,
         _passwordController.text,
       );
-      
-      // Jika login berhasil, navigasi ke halaman dashboard (belum dibuat)
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Login WFO Berhasil!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+  
+      if (response.containsKey('user') && response['user']['id'] != null) {
+        final userId = int.parse(response['user']['id'].toString());
+        final prefs = await SharedPreferences.getInstance();
+
+        // --- PERUBAHAN DI SINI ---
+        // Simpan semua data sesi yang diperlukan
+        await prefs.setInt('user_id', userId);
+        await prefs.setInt('login_timestamp', DateTime.now().millisecondsSinceEpoch);
+        await prefs.setString('login_type', 'wfo'); // Tandai sebagai login WFO
+        // -------------------------
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Login Berhasil!'), backgroundColor: Colors.green),
+          );
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const DashboardScreen()),
+          );
+        }
+      } else {
+        throw Exception('Respons dari server tidak valid.');
+      }
 
     } catch (e) {
-      // Tangani error dari validasi IP atau dari proses login
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: ${e.toString().replaceAll("Exception: ", "")}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll("Exception: ", "")), backgroundColor: Colors.red),
+        );
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:absensi/screens/selection_screen.dart';
+import 'package:absensi/screens/splash_screen.dart'; // Ganti import
 import 'package:absensi/screens/wfa_login_screen.dart';
 import 'package:absensi/screens/wfo_login_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:flutter_localizations/flutter_localizations.dart'; 
 
 Future<void> main() async {
-
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('id_ID', null);
-  
   runApp(const MyApp());
 }
 
@@ -23,9 +22,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.indigo,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      // Rute awal aplikasi
-      home: const SelectionScreen(),
-      // Definisi rute untuk navigasi
+      home: const SplashScreen(),
       routes: {
         '/wfa-login': (context) => const WfaLoginScreen(),
         '/wfo-login': (context) => const WfoLoginScreen(),

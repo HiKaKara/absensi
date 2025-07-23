@@ -1,9 +1,15 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:absensi/widgets/choice_card.dart';
-import 'package:absensi/screens/check_in_screen.dart';
-import 'package:absensi/screens/check_out_screen.dart';
+
+// --- IMPORT YANG DIPERBAIKI SESUAI STRUKTUR FOLDER BARU ---
+import 'package:absensi/screens/dashboard/wfo/wfo_check_in_screen.dart';
+import 'package:absensi/screens/dashboard/wfo/wfo_check_out_screen.dart';
+import 'package:absensi/screens/dashboard/wfa/wfa_check_in_screen.dart';
+import 'package:absensi/screens/dashboard/wfa/wfa_check_out_screen.dart';
+// ---------------------------------------------------------
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,34 +21,52 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late String _currentTime;
   late Timer _timer;
+  String _dashboardTitle = 'Dashboard';
+  String _loginType = '';
 
   @override
   void initState() {
     super.initState();
-    // Inisialisasi waktu saat ini
     _currentTime = _formatDateTime(DateTime.now());
-    // Atur timer untuk update waktu setiap detik
     _timer = Timer.periodic(const Duration(seconds: 1), (Timer t) => _getTime());
+    _loadLoginType();
   }
 
-  // Fungsi untuk mendapatkan dan memformat waktu
+  Future<void> _loadLoginType() async {
+    final prefs = await SharedPreferences.getInstance();
+    final loginType = prefs.getString('login_type')?.toUpperCase();
+
+    if (mounted) {
+      setState(() {
+        if (loginType == 'WFA') {
+          _dashboardTitle = 'WFA Dashboard';
+          _loginType = 'wfa';
+        } else if (loginType == 'WFO') {
+          _dashboardTitle = 'WFO Dashboard';
+          _loginType = 'wfo';
+        } else {
+          _dashboardTitle = 'Home';
+        }
+      });
+    }
+  }
+
   void _getTime() {
     final DateTime now = DateTime.now();
     final String formattedDateTime = _formatDateTime(now);
-    setState(() {
-      _currentTime = formattedDateTime;
-    });
+    if (mounted) {
+      setState(() {
+        _currentTime = formattedDateTime;
+      });
+    }
   }
 
-  // Fungsi untuk memformat tampilan waktu
   String _formatDateTime(DateTime dateTime) {
-    // Anda bisa mengubah format sesuai keinginan, misal: 'HH:mm:ss'
     return DateFormat('EEEE, dd MMMM yyyy\nHH:mm:ss', 'id_ID').format(dateTime);
   }
 
   @override
   void dispose() {
-    // Hentikan timer saat widget tidak lagi digunakan untuk mencegah memory leak
     _timer.cancel();
     super.dispose();
   }
@@ -51,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Home'),
+        title: Text(_dashboardTitle),
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
@@ -61,7 +85,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Widget untuk menampilkan waktu realtime
             Text(
               _currentTime,
               textAlign: TextAlign.center,
@@ -72,42 +95,47 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 40),
-            
-            // Tombol Check In menggunakan ChoiceCard
             Row(
-            mainAxisAlignment: MainAxisAlignment.center, // Pusatkan tombol ke tengah
-            children: [
-              // Gunakan Flexible agar kartu tidak terlalu besar dan menyebabkan overflow
-              Flexible(
-                child: ChoiceCard(
-                  title: 'Check In',
-                  imagePath: 'assets/images/welcome.png',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const CheckInScreen()),
-                    );
-                  },
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Flexible(
+                  child: ChoiceCard(
+                    title: 'Check In',
+                    imagePath: 'assets/images/welcome.png',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => _loginType == 'wfo'
+                              ? const WfoCheckInScreen()
+                              : const WfaCheckInScreen(),
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(width: 20), // Beri jarak antar tombol
-              Flexible(
-                child: ChoiceCard(
-                  title: 'Check Out',
-                  imagePath: 'assets/images/goodbye.png',
-                  onTap: () {
-                    Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const CheckOutScreen()),
-                    );
-                  },
+                const SizedBox(width: 20),
+                Flexible(
+                  child: ChoiceCard(
+                    title: 'Check Out',
+                    imagePath: 'assets/images/goodbye.png',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => _loginType == 'wfo'
+                              ? const WfoCheckOutScreen()
+                              : const WfaCheckOutScreen(),
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

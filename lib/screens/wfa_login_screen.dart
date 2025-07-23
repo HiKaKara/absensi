@@ -25,45 +25,54 @@ class _WfaLoginScreenState extends State<WfaLoginScreen> {
     });
 
     try {
-    final response = await _apiService.login(
-      _emailController.text,
-      _passwordController.text,
-    );
-
-    // Ambil user ID dari response
-    final userIdString = response['user']['id'].toString();
-
-    // UBAH STRING MENJADI INT DENGAN PARSE
-    final userIdInt = int.parse(userIdString);
-
-    // Simpan ID pengguna yang sudah menjadi integer
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('user_id', userIdInt);
-      // Anda bisa menggunakan data 'response' di sini jika perlu
-      print('Login berhasil untuk: ${response['user']['name']}');
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Login WFA Berhasil!'),
-          backgroundColor: Colors.green,
-        ),
+      final response = await _apiService.login(
+        _emailController.text,
+        _passwordController.text,
       );
-      
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const DashboardScreen()),
-      );
+
+      // Pastikan respons dari API valid sebelum melanjutkan
+      if (response.containsKey('user') && response['user']['id'] != null) {
+        final userIdInt = int.parse(response['user']['id'].toString());
+        final prefs = await SharedPreferences.getInstance();
+
+        // --- PERUBAHAN DI SINI ---
+        // Simpan semua data sesi yang diperlukan
+        await prefs.setInt('user_id', userIdInt);
+        await prefs.setInt('login_timestamp', DateTime.now().millisecondsSinceEpoch);
+        await prefs.setString('login_type', 'wfa'); // Tandai sebagai login WFA
+        // -------------------------
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Login WFA Berhasil!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const DashboardScreen()),
+          );
+        }
+      } else {
+        // Lemparkan error jika format respons tidak sesuai
+        throw Exception('Respons dari server tidak valid.');
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          // Menghapus "Exception: " dari pesan error
-          content: Text(e.toString().replaceAll("Exception: ", "")),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll("Exception: ", "")),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
