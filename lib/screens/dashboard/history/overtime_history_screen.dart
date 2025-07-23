@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:absensi/services/api_service.dart';
+import 'package:absensi/screens/dashboard/history/detail/overtime_detail_screen.dart'; // Import halaman detail
 
 class OvertimeHistoryScreen extends StatefulWidget {
   const OvertimeHistoryScreen({super.key});
@@ -13,19 +14,15 @@ class OvertimeHistoryScreen extends StatefulWidget {
 class _OvertimeHistoryScreenState extends State<OvertimeHistoryScreen> {
   final ApiService _apiService = ApiService();
   Future<List<dynamic>>? _historyFuture;
-
-  // --- State untuk mengelola filter ---
   DateTimeRange? _selectedDateRange;
   String _filterText = 'Bulan Ini';
 
   @override
   void initState() {
     super.initState();
-    // Inisialisasi data untuk bulan ini secara default
     _setFilterToThisMonth();
   }
 
-  // --- Logika Filter ---
   void _setFilterToThisMonth() {
     final now = DateTime.now();
     final firstDayOfMonth = DateTime(now.year, now.month, 1);
@@ -38,13 +35,20 @@ class _OvertimeHistoryScreenState extends State<OvertimeHistoryScreen> {
   }
 
   Future<void> _selectDateRange(BuildContext context) async {
+    final now = DateTime.now();
+    final lastDate = DateTime(now.year, now.month, now.day);
+    final initialRange = _selectedDateRange != null && _selectedDateRange!.end.isAfter(lastDate)
+        ? DateTimeRange(start: _selectedDateRange!.start, end: lastDate)
+        : _selectedDateRange;
+
     final DateTimeRange? picked = await showDateRangePicker(
       context: context,
-      initialDateRange: _selectedDateRange,
+      initialDateRange: initialRange,
       firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
+      lastDate: lastDate,
       locale: const Locale('id', 'ID'),
     );
+
     if (picked != null && picked != _selectedDateRange) {
       setState(() {
         _selectedDateRange = picked;
@@ -62,7 +66,6 @@ class _OvertimeHistoryScreenState extends State<OvertimeHistoryScreen> {
     if (userId == null) {
       throw Exception('User ID tidak ditemukan.');
     }
-    // Mengirim parameter tanggal ke ApiService
     return _apiService.fetchOvertimeHistory(
       userId,
       startDate: _selectedDateRange!.start,
@@ -70,7 +73,6 @@ class _OvertimeHistoryScreenState extends State<OvertimeHistoryScreen> {
     );
   }
 
-  // --- Helper Formatting ---
   String _formatDate(String date) {
     try {
       return DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(DateTime.parse(date));
@@ -115,25 +117,14 @@ class _OvertimeHistoryScreenState extends State<OvertimeHistoryScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Gunakan Flexible agar teks tidak overflow
                 Flexible(
-                  child: Text(
-                    _filterText,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                    overflow: TextOverflow.ellipsis,
-                  )
+                  child: Text(_filterText, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14), overflow: TextOverflow.ellipsis)
                 ),
                 Row(
                   children: [
                     ElevatedButton(onPressed: _setFilterToThisMonth, child: const Text('Bulan Ini')),
                     const SizedBox(width: 8),
-                    // --- PERBAIKAN DI SINI ---
-                    ElevatedButton(
-                      onPressed: () {
-                        _selectDateRange(context); // Panggil fungsi di dalam blok
-                      },
-                      child: const Text('Pilih')
-                    ),
+                    ElevatedButton(onPressed: () => _selectDateRange(context), child: const Text('Pilih')),
                   ],
                 ),
               ],
@@ -164,12 +155,22 @@ class _OvertimeHistoryScreenState extends State<OvertimeHistoryScreen> {
 
                     return Card(
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: ListTile(
-                        leading: Icon(statusStyle['icon'], color: statusStyle['color'], size: 40),
-                        title: Text(history['overtime_type'] ?? 'Jenis Lembur', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text('Tanggal: ${_formatDate(history['start_date'])}\nWaktu: ${_formatTime(history['start_time'])} - ${_formatTime(history['end_time'])}'),
-                        trailing: Text(status.toUpperCase(), style: TextStyle(color: statusStyle['color'], fontWeight: FontWeight.bold)),
-                        isThreeLine: true,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => OvertimeDetailScreen(overtimeData: history),
+                            ),
+                          );
+                        },
+                        child: ListTile(
+                          leading: Icon(statusStyle['icon'], color: statusStyle['color'], size: 40),
+                          title: Text(history['overtime_type'] ?? 'Jenis Lembur', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Text('Tanggal: ${_formatDate(history['start_date'])}\nWaktu: ${_formatTime(history['start_time'])} - ${_formatTime(history['end_time'])}'),
+                          trailing: Text(status.toUpperCase(), style: TextStyle(color: statusStyle['color'], fontWeight: FontWeight.bold)),
+                          isThreeLine: true,
+                        ),
                       ),
                     );
                   },

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:absensi/services/api_service.dart';
+import 'package:absensi/screens/dashboard/history/detail/attendance_detail_screen.dart'; // Import halaman detail
 
 class AttendanceHistoryScreen extends StatefulWidget {
   const AttendanceHistoryScreen({super.key});
@@ -13,18 +14,15 @@ class AttendanceHistoryScreen extends StatefulWidget {
 class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
   final ApiService _apiService = ApiService();
   Future<List<dynamic>>? _historyFuture;
-
-  // State untuk mengelola filter
   DateTimeRange? _selectedDateRange;
   String _filterText = 'Bulan Ini';
 
   @override
   void initState() {
     super.initState();
-    _setFilterToThisMonth(); // Atur filter awal
+    _setFilterToThisMonth();
   }
 
-  // --- Logika Filter ---
   void _setFilterToThisMonth() {
     final now = DateTime.now();
     final firstDayOfMonth = DateTime(now.year, now.month, 1);
@@ -32,14 +30,13 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
     setState(() {
       _selectedDateRange = DateTimeRange(start: firstDayOfMonth, end: lastDayOfMonth);
       _filterText = 'Bulan Ini: ${DateFormat('MMMM yyyy', 'id_ID').format(now)}';
-      _historyFuture = _fetchHistory(); // Panggil fetch data
+      _historyFuture = _fetchHistory();
     });
   }
 
   Future<void> _selectDateRange(BuildContext context) async {
     final now = DateTime.now();
     final lastDate = DateTime(now.year, now.month, now.day);
-
     final initialRange = _selectedDateRange != null && _selectedDateRange!.end.isAfter(lastDate)
         ? DateTimeRange(start: _selectedDateRange!.start, end: lastDate)
         : _selectedDateRange;
@@ -58,7 +55,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
         final startDate = DateFormat('dd/MM/yy', 'id_ID').format(picked.start);
         final endDate = DateFormat('dd/MM/yy', 'id_ID').format(picked.end);
         _filterText = 'Rentang: $startDate - $endDate';
-        _historyFuture = _fetchHistory(); // Panggil fetch data
+        _historyFuture = _fetchHistory();
       });
     }
   }
@@ -67,7 +64,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('user_id');
     if (userId == null) {
-      throw Exception('User ID tidak ditemukan. Silakan login kembali.');
+      throw Exception('User ID tidak ditemukan.');
     }
     return _apiService.fetchAttendanceHistory(
       userId,
@@ -76,7 +73,6 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
     );
   }
 
-  // --- Helper Formatting ---
   String _formatDate(String date) {
     try {
       return DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(DateTime.parse(date));
@@ -110,20 +106,13 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Flexible(
-                  child: Text(
-                    _filterText,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                    overflow: TextOverflow.ellipsis,
-                  )
+                  child: Text(_filterText, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14), overflow: TextOverflow.ellipsis)
                 ),
                 Row(
                   children: [
                     ElevatedButton(onPressed: _setFilterToThisMonth, child: const Text('Bulan Ini')),
                     const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () => _selectDateRange(context),
-                      child: const Text('Pilih')
-                    ),
+                    ElevatedButton(onPressed: () => _selectDateRange(context), child: const Text('Pilih')),
                   ],
                 ),
               ],
@@ -149,20 +138,37 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                   itemCount: historyList.length,
                   itemBuilder: (context, index) {
                     final history = historyList[index];
+                    final workType = history['work_location_type'] ?? 'N/A';
+                    final isWfo = workType.toUpperCase() == 'WFO';
+
                     return Card(
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       elevation: 2,
-                      child: ListTile(
-                        leading: const Icon(Icons.check_circle, color: Colors.green, size: 40),
-                        title: Text(
-                          _formatDate(history['attendance_date']),
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AttendanceDetailScreen(historyData: history),
+                            ),
+                          );
+                        },
+                        child: ListTile(
+                          leading: Icon(
+                            isWfo ? Icons.business_center : Icons.home_work,
+                            color: isWfo ? Colors.blue.shade800 : Colors.teal,
+                            size: 40,
+                          ),
+                          title: Text(
+                            _formatDate(history['attendance_date']),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(
+                            'Masuk: ${_formatTime(history['time_in'])} - Pulang: ${_formatTime(history['time_out'])}',
+                          ),
+                          trailing: const Icon(Icons.chevron_right),
+                          isThreeLine: false,
                         ),
-                        subtitle: Text(
-                          'Masuk: ${_formatTime(history['time_in'])} - Pulang: ${_formatTime(history['time_out'])}',
-                        ),
-                        trailing: const Icon(Icons.chevron_right),
-                        isThreeLine: false,
                       ),
                     );
                   },
