@@ -10,7 +10,7 @@ import 'package:intl/intl.dart';
 class ApiService {
   // Ganti IP ini jika backend dihosting di tempat lain.
   // 10.0.2.2 adalah localhost untuk emulator Android.
-  static const String _baseUrl = 'http://10.14.72.51:8080/api/';
+  static const String _baseUrl = 'http://10.14.72.31:8080/api/';
 
 
 Future<List<dynamic>> fetchAllEmployees() async {
