@@ -1,7 +1,7 @@
-import 'package:absensi/admin/admin_dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:absensi/pegawai/screens/dashboard_screen.dart';
+import 'package:absensi/admin/admin_dashboard_screen.dart';
 import 'package:absensi/selection_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -19,7 +19,6 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkLoginStatus() async {
-    // Tentukan durasi sesi di sini
     const wfoDuration = Duration(hours: 8);
     const wfaDuration = Duration(hours: 24);
 
@@ -29,42 +28,30 @@ class _SplashScreenState extends State<SplashScreen> {
     final loginType = prefs.getString('login_type');
     final userRole = prefs.getString('user_role');
 
-if (userId != null) {
-  if (userRole == 'Admin') { // Ganti 'Admin' sesuai dengan nilai di database
-    _navigateTo(const AdminDashboardScreen()); // Arahkan ke Dashboard Admin
-  } else {
-    _navigateTo(const DashboardScreen()); // Arahkan ke Dashboard Pegawai
-  }
-} else {
-  _navigateTo(const SelectionScreen());
-}
-
-    // Jika salah satu data sesi tidak ada, anggap belum login
-    if (userId == null || loginTimestamp == null || loginType == null) {
+    if (userId == null || loginTimestamp == null || loginType == null || userRole == null) {
+      await prefs.clear();
       _navigateTo(const SelectionScreen());
       return;
     }
 
-    // Tentukan durasi yang berlaku berdasarkan tipe login
     final allowedDuration = (loginType == 'wfo') ? wfoDuration : wfaDuration;
-    
     final loginTime = DateTime.fromMillisecondsSinceEpoch(loginTimestamp);
-    final currentTime = DateTime.now();
-    final sessionDuration = currentTime.difference(loginTime);
+    final sessionDuration = DateTime.now().difference(loginTime);
 
-    // Periksa apakah sesi sudah kedaluwarsa
     if (sessionDuration > allowedDuration) {
-      // Sesi kedaluwarsa, lakukan logout
-      await prefs.clear(); // Hapus semua data sesi
+      await prefs.clear();
       _navigateTo(const SelectionScreen());
     } else {
-      // Sesi masih valid, lanjutkan ke Dashboard
-      _navigateTo(const DashboardScreen());
+      // Arahkan ke dashboard yang benar
+      if (userRole.toLowerCase() == 'admin') {
+        _navigateTo(const AdminDashboardScreen());
+      } else {
+        _navigateTo(const DashboardScreen());
+      }
     }
   }
 
   void _navigateTo(Widget screen) {
-    // Menunggu sebentar untuk efek splash screen
     Future.delayed(const Duration(seconds: 1), () {
       if (mounted) {
         Navigator.of(context).pushReplacement(

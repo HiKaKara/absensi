@@ -155,31 +155,26 @@ Future<void> validateWfoIp() async {
     }
   }
   Future<Map<String, dynamic>> submitCheckIn({
-    required int userId,
-    required File imageFile,
-    required Position position,
-    required String address,
-    required String shift,
-    required String workLocationType,
-  }) async {
-    final url = Uri.parse('${_baseUrl}attendance/checkin');
-    var request = http.MultipartRequest('POST', url);
+  required int userId,
+  required File imageFile,
+  required Position position,
+  required String address,
+  required String shift,
+  required String workLocationType,
+}) async {
+  final url = Uri.parse('${_baseUrl}attendance/checkin');
+  var request = http.MultipartRequest('POST', url);
 
-    // Tambahkan field data
-    request.fields['user_id'] = userId.toString();
-    request.fields['latitude'] = position.latitude.toString();
-    request.fields['longitude'] = position.longitude.toString();
-    request.fields['address'] = address;
-    request.fields['shift'] = shift;
-    request.fields['work_location_type'] = workLocationType;
-    
-    // Tambahkan file foto
-    request.files.add(
-      await http.MultipartFile.fromPath(
-        'photo_in', // Sesuaikan dengan key di backend
-        imageFile.path,
-      ),
-    );
+  request.fields['user_id'] = userId.toString();
+  request.fields['latitude'] = position.latitude.toString();
+  request.fields['longitude'] = position.longitude.toString();
+  request.fields['address'] = address;
+  request.fields['shift'] = shift;
+  request.fields['work_location_type'] = workLocationType;
+  
+  request.files.add(
+    await http.MultipartFile.fromPath('photo_in', imageFile.path),
+  );
 
     try {
       final streamedResponse = await request.send().timeout(const Duration(seconds: 20));
@@ -215,17 +210,12 @@ Future<void> validateWfoIp() async {
   final url = Uri.parse('${_baseUrl}attendance/checkout');
   var request = http.MultipartRequest('POST', url);
 
-  // Tambahkan field data
   request.fields['user_id'] = userId.toString();
   request.fields['latitude'] = position.latitude.toString();
   request.fields['longitude'] = position.longitude.toString();
   
-  // Tambahkan file foto
   request.files.add(
-    await http.MultipartFile.fromPath(
-      'photo_out', 
-      imageFile.path,
-    ),
+    await http.MultipartFile.fromPath('photo_out', imageFile.path),
   );
 
   try {

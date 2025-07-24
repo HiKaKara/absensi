@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:absensi/pegawai/services/api_service.dart';
 import 'package:absensi/pegawai/screens/dashboard_screen.dart';
+import 'package:absensi/admin/admin_dashboard_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class WfaLoginScreen extends StatefulWidget {
@@ -19,10 +20,7 @@ class _WfaLoginScreenState extends State<WfaLoginScreen> {
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
       final response = await _apiService.login(
@@ -30,50 +28,57 @@ class _WfaLoginScreenState extends State<WfaLoginScreen> {
         _passwordController.text,
       );
 
-      // Pastikan respons dari API valid sebelum melanjutkan
-      if (response.containsKey('user') && response['user']['id'] != null) {
-        final userIdInt = int.parse(response['user']['id'].toString());
-        final prefs = await SharedPreferences.getInstance();
+      // --- PERBAIKAN LOGIKA PARSING DAN NAVIGASI ---
+      final Map<String, dynamic> userData;
+      // Cek apakah data pengguna ada di dalam objek 'user'
+      if (response.containsKey('user') && response['user'] is Map) {
+        userData = response['user'] as Map<String, dynamic>;
+      } else {
+        // Jika tidak, asumsikan data pengguna ada di level atas
+        userData = response;
+      }
 
+      // Pastikan data 'id' dan 'role' ada dan tidak null
+      if (userData.containsKey('id') && userData['id'] != null && userData.containsKey('role') && userData['role'] != null) {
+        final userId = int.parse(userData['id'].toString());
+        final userRole = userData['role'] as String;
 
-        // --- PERUBAHAN DI SINI ---
         // Simpan semua data sesi yang diperlukan
-        await prefs.setInt('user_id', userIdInt);
-        await prefs.setString('user_role', response['user']['role']);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('user_id', userId);
+        await prefs.setString('user_role', userRole);
         await prefs.setInt('login_timestamp', DateTime.now().millisecondsSinceEpoch);
-        await prefs.setString('login_type', 'wfa'); // Tandai sebagai login WFA
-        // -------------------------
+        await prefs.setString('login_type', 'wfa');
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Login WFA Berhasil!'),
-              backgroundColor: Colors.green,
-            ),
+            const SnackBar(content: Text('Login Berhasil!'), backgroundColor: Colors.green),
           );
           
+          // Arahkan ke dashboard yang sesuai berdasarkan role
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const DashboardScreen()),
+            MaterialPageRoute(
+              builder: (context) => userRole.toLowerCase() == 'admin' 
+                  ? const AdminDashboardScreen() 
+                  : const DashboardScreen(),
+            ),
           );
         }
       } else {
-        // Lemparkan error jika format respons tidak sesuai
-        throw Exception('Respons dari server tidak valid.');
+        // Lemparkan error jika format respons dari API tidak sesuai harapan
+        throw Exception('Respons dari server tidak valid (data user tidak ditemukan).');
       }
+      // --- AKHIR PERBAIKAN ---
+
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll("Exception: ", "")),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(e.toString().replaceAll("Exception: ", "")), backgroundColor: Colors.red),
         );
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }

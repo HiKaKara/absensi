@@ -1,6 +1,7 @@
-import 'package:absensi/pegawai/screens/dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:absensi/pegawai/services/api_service.dart';
+import 'package:absensi/pegawai/screens/dashboard_screen.dart';
+import 'package:absensi/admin/admin_dashboard_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class WfoLoginScreen extends StatefulWidget {
@@ -22,38 +23,48 @@ class _WfoLoginScreenState extends State<WfoLoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Langkah 1: Validasi IP terlebih dahulu
       await _apiService.validateWfoIp();
       
-      // Langkah 2: Jika IP valid, lanjutkan ke proses login
       final response = await _apiService.login(
         _emailController.text,
         _passwordController.text,
       );
   
-      if (response.containsKey('user') && response['user']['id'] != null) {
-        final userId = int.parse(response['user']['id'].toString());
-        final prefs = await SharedPreferences.getInstance();
+      // --- PERBAIKAN LOGIKA PARSING JSON ---
+      final Map<String, dynamic> userData;
+      if (response.containsKey('user') && response['user'] is Map) {
+        userData = response['user'] as Map<String, dynamic>;
+      } else {
+        userData = response;
+      }
 
-        // --- PERUBAHAN DI SINI ---
-        // Simpan semua data sesi yang diperlukan
+      if (userData.containsKey('id') && userData['id'] != null && userData.containsKey('role') && userData['role'] != null) {
+        final userId = int.parse(userData['id'].toString());
+        final userRole = userData['role'] as String;
+
+        final prefs = await SharedPreferences.getInstance();
         await prefs.setInt('user_id', userId);
-        await prefs.setString('user_role', response['user']['role']);
+        await prefs.setString('user_role', userRole);
         await prefs.setInt('login_timestamp', DateTime.now().millisecondsSinceEpoch);
-        await prefs.setString('login_type', 'wfo'); // Tandai sebagai login WFO
-        // -------------------------
+        await prefs.setString('login_type', 'wfo');
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Login Berhasil!'), backgroundColor: Colors.green),
           );
+          
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const DashboardScreen()),
+            MaterialPageRoute(
+              builder: (context) => userRole.toLowerCase() == 'admin'
+                  ? const AdminDashboardScreen() 
+                  : const DashboardScreen(),
+            ),
           );
         }
       } else {
-        throw Exception('Respons dari server tidak valid.');
+        throw Exception('Respons dari server tidak valid (data user tidak ditemukan).');
       }
+      // --- AKHIR PERBAIKAN ---
 
     } catch (e) {
       if (mounted) {

@@ -7,8 +7,9 @@ class AttendanceDetailScreen extends StatelessWidget {
 
   const AttendanceDetailScreen({super.key, required this.historyData});
 
-  // Helper untuk memformat data
-  String _formatDate(String date) {
+  // Helper untuk memformat tanggal
+  String _formatDate(String? date) {
+    if (date == null || date.isEmpty) return 'Tanggal Tidak Ada';
     try {
       return DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(DateTime.parse(date));
     } catch (e) {
@@ -16,6 +17,7 @@ class AttendanceDetailScreen extends StatelessWidget {
     }
   }
 
+  // Helper untuk memformat waktu
   String _formatTime(String? time) {
     if (time == null || time.isEmpty) return 'Belum Absen';
     try {
@@ -27,16 +29,20 @@ class AttendanceDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // URL dasar untuk gambar, sesuaikan dengan IP Anda
-    const String imageUrlBase = 'http://10.14.72.51:8080/uploads/attendances/';
-    final String photoInUrl = imageUrlBase + (historyData['photo_in'] ?? '');
-    final String photoOutUrl = imageUrlBase + (historyData['photo_out'] ?? '');
+    // --- PERBAIKAN PENTING ---
+    // 1. Tentukan URL dasar untuk gambar. Ganti IP jika perlu.
+    const String imageUrlBase = 'http://10.14.72.31:8080/uploads/attendances/';
 
-    // Koordinat untuk peta
+    // 2. Bangun URL lengkap dengan aman, tangani jika nama file null
+    final String photoInUrl = historyData['photo_in'] != null ? imageUrlBase + historyData['photo_in'] : '';
+    final String photoOutUrl = historyData['photo_out'] != null ? imageUrlBase + historyData['photo_out'] : '';
+
+    // 3. Ambil dan validasi koordinat untuk peta
     final LatLng checkInLocation = LatLng(
-      double.tryParse(historyData['latitude']?.toString() ?? '0') ?? 0,
-      double.tryParse(historyData['longitude']?.toString() ?? '0') ?? 0,
+      double.tryParse(historyData['latitude_in']?.toString() ?? '0') ?? 0,
+      double.tryParse(historyData['longitude_in']?.toString() ?? '0') ?? 0,
     );
+    // -------------------------
 
     return Scaffold(
       appBar: AppBar(
@@ -79,24 +85,28 @@ class AttendanceDetailScreen extends StatelessWidget {
               title: 'Lokasi Presensi',
               icon: Icons.location_on_outlined,
               children: [
-                Text(historyData['address'] ?? 'Alamat tidak tercatat'),
+                // Gunakan 'address_in' untuk menampilkan alamat check-in
+                Text(historyData['address_in'] ?? 'Alamat tidak tercatat'),
                 const SizedBox(height: 12),
                 SizedBox(
                   height: 200,
-                  child: GoogleMap(
-                    initialCameraPosition: CameraPosition(
-                      target: checkInLocation,
-                      zoom: 16,
-                    ),
-                    markers: {
-                      Marker(
-                        markerId: const MarkerId('attendanceLocation'),
-                        position: checkInLocation,
-                      ),
-                    },
-                    scrollGesturesEnabled: false,
-                    zoomGesturesEnabled: false,
-                  ),
+                  // Pastikan koordinat valid sebelum menampilkan peta
+                  child: (checkInLocation.latitude == 0 && checkInLocation.longitude == 0)
+                      ? const Center(child: Text("Data lokasi tidak tersedia."))
+                      : GoogleMap(
+                          initialCameraPosition: CameraPosition(
+                            target: checkInLocation,
+                            zoom: 16,
+                          ),
+                          markers: {
+                            Marker(
+                              markerId: const MarkerId('attendanceLocation'),
+                              position: checkInLocation,
+                            ),
+                          },
+                          scrollGesturesEnabled: false,
+                          zoomGesturesEnabled: false,
+                        ),
                 ),
               ],
             ),
@@ -158,19 +168,20 @@ class AttendanceDetailScreen extends StatelessWidget {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              // Tampilkan icon jika gambar gagal dimuat
-              errorBuilder: (context, error, stackTrace) {
-                return const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 40));
-              },
-              // Tampilkan loading indicator saat gambar sedang diunduh
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return const Center(child: CircularProgressIndicator());
-              },
-            ),
+            // Cek apakah URL valid sebelum mencoba memuat gambar
+            child: imageUrl.isNotEmpty
+                ? Image.network(
+                    imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 40));
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(child: CircularProgressIndicator());
+                    },
+                  )
+                : const Center(child: Icon(Icons.photo, color: Colors.grey, size: 40)),
           ),
         ),
       ],

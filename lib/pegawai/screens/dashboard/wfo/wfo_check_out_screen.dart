@@ -16,10 +16,8 @@ class WfoCheckOutScreen extends StatefulWidget {
 }
 
 class _WfoCheckOutScreenState extends State<WfoCheckOutScreen> {
-  // BARU: Satu Future untuk mengelola semua proses inisialisasi
+  // --- State ---
   late Future<void> _initializationFuture;
-
-  // State lainnya tetap sama
   CameraController? _cameraController;
   XFile? _capturedImage;
   Position? _currentPosition;
@@ -32,7 +30,6 @@ class _WfoCheckOutScreenState extends State<WfoCheckOutScreen> {
   @override
   void initState() {
     super.initState();
-    // Panggil satu fungsi utama untuk memulai semua proses async
     _initializationFuture = _initializePage();
   }
 
@@ -42,19 +39,15 @@ class _WfoCheckOutScreenState extends State<WfoCheckOutScreen> {
     super.dispose();
   }
 
-  // --- LOGIKA UTAMA ---
-
-  // BARU: Fungsi ini menggabungkan semua tugas berat
+  // --- Logika ---
   Future<void> _initializePage() async {
     try {
-      // Jalankan semua proses secara bersamaan untuk efisiensi
       await Future.wait([
         _initializeCamera(),
         _initializeLocation(),
       ]);
-      _determineShift(); // Ini adalah fungsi sinkron, bisa dipanggil setelahnya
+      _determineShift();
     } catch (e) {
-      // Jika salah satu gagal, seluruh Future akan gagal dan ditangkap oleh FutureBuilder
       throw Exception('Gagal memuat halaman: ${e.toString().replaceAll("Exception: ", "")}');
     }
   }
@@ -68,7 +61,6 @@ class _WfoCheckOutScreenState extends State<WfoCheckOutScreen> {
       _cameraController = CameraController(firstCamera, ResolutionPreset.medium);
       await _cameraController!.initialize();
     } catch (e) {
-      print("Error inisialisasi kamera: $e");
       throw Exception('Gagal memuat kamera');
     }
   }
@@ -81,13 +73,9 @@ class _WfoCheckOutScreenState extends State<WfoCheckOutScreen> {
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          throw Exception('Izin lokasi ditolak.');
-        }
+        if (permission == LocationPermission.denied) throw Exception('Izin lokasi ditolak.');
       }
-      if (permission == LocationPermission.deniedForever) {
-        throw Exception('Izin lokasi ditolak permanen.');
-      }
+      if (permission == LocationPermission.deniedForever) throw Exception('Izin lokasi ditolak permanen.');
 
       Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
       
@@ -96,8 +84,7 @@ class _WfoCheckOutScreenState extends State<WfoCheckOutScreen> {
         await _getAddressFromLatLng();
       }
     } catch (e) {
-      if(mounted) setState(() => _currentAddress = "Gagal mendapatkan lokasi");
-      throw Exception(e.toString());
+      throw Exception('Gagal mendapatkan lokasi');
     }
   }
 
@@ -107,7 +94,13 @@ class _WfoCheckOutScreenState extends State<WfoCheckOutScreen> {
       List<Placemark> placemarks = await placemarkFromCoordinates(_currentPosition!.latitude, _currentPosition!.longitude);
       if (placemarks.isNotEmpty && mounted) {
         Placemark place = placemarks[0];
-        setState(() => _currentAddress = "${place.street}, ${place.subLocality}, ${place.locality}");
+        String placeName = place.name ?? '';
+        String street = place.thoroughfare ?? '';
+        String subLocality = place.subLocality ?? '';
+        String formattedAddress = placeName;
+        if (street.isNotEmpty && !placeName.contains(street)) formattedAddress += ", $street";
+        if (subLocality.isNotEmpty && !formattedAddress.contains(subLocality)) formattedAddress += ", $subLocality";
+        setState(() => _currentAddress = formattedAddress);
       }
     } catch (e) {
       if (mounted) setState(() => _currentAddress = "Gagal menerjemahkan lokasi.");
@@ -174,7 +167,7 @@ class _WfoCheckOutScreenState extends State<WfoCheckOutScreen> {
     }
   }
 
-  // --- UI (Tampilan) ---
+  // --- UI ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -183,31 +176,11 @@ class _WfoCheckOutScreenState extends State<WfoCheckOutScreen> {
         future: _initializationFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text("Mempersiapkan halaman..."),
-                ],
-              ),
-            );
+            return const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [CircularProgressIndicator(), SizedBox(height: 16), Text("Mempersiapkan halaman...")]));
           }
-
           if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Text(
-                  "Gagal memuat halaman:\n${snapshot.error.toString().replaceAll("Exception: ", "")}",
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.red, fontSize: 16),
-                ),
-              ),
-            );
+            return Center(child: Padding(padding: const EdgeInsets.all(20.0), child: Text("Gagal memuat halaman:\n${snapshot.error}", textAlign: TextAlign.center, style: const TextStyle(color: Colors.red, fontSize: 16))));
           }
-
           return _buildCheckOutForm();
         },
       ),
@@ -263,21 +236,10 @@ class _WfoCheckOutScreenState extends State<WfoCheckOutScreen> {
                       ? Center(child: Text(_currentAddress))
                       : GoogleMap(
                           mapType: MapType.normal,
-                          initialCameraPosition: CameraPosition(
-                            target: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-                            zoom: 17.0,
-                          ),
-                          markers: {
-                            Marker(
-                              markerId: const MarkerId('currentLocation'),
-                              position: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-                            )
-                          },
-                          onMapCreated: (GoogleMapController controller) {
-                            if(!_mapController.isCompleted) _mapController.complete(controller);
-                          },
-                          zoomGesturesEnabled: false,
-                          scrollGesturesEnabled: false,
+                          initialCameraPosition: CameraPosition(target: LatLng(_currentPosition!.latitude, _currentPosition!.longitude), zoom: 17.0),
+                          markers: {Marker(markerId: const MarkerId('currentLocation'), position: LatLng(_currentPosition!.latitude, _currentPosition!.longitude))},
+                          onMapCreated: (GoogleMapController controller) { if(!_mapController.isCompleted) _mapController.complete(controller); },
+                          zoomGesturesEnabled: false, scrollGesturesEnabled: false,
                         ),
                 ),
                 const SizedBox(height: 8),
@@ -287,10 +249,10 @@ class _WfoCheckOutScreenState extends State<WfoCheckOutScreen> {
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: _submitCheckOut,
+            onPressed: _isSubmitting ? null : _submitCheckOut,
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
-              backgroundColor: Colors.red, // Warna berbeda untuk check out
+              backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
             child: _isSubmitting
