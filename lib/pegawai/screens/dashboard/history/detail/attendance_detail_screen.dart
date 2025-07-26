@@ -31,7 +31,7 @@ class AttendanceDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     // --- PERBAIKAN PENTING ---
     // 1. Tentukan URL dasar untuk gambar. Ganti IP jika perlu.
-    const String imageUrlBase = 'http://10.14.72.31:8080/uploads/attendances/';
+    const String imageUrlBase = 'http://192.168.1.5:8080/uploads/attendances/';
 
     // 2. Bangun URL lengkap dengan aman, tangani jika nama file null
     final String photoInUrl = historyData['photo_in'] != null ? imageUrlBase + historyData['photo_in'] : '';

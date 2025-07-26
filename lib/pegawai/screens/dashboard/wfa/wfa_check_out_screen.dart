@@ -5,7 +5,7 @@ import 'package:camera/camera.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:absensi/pegawai/services/api_service.dart';
+import 'package:absensi/services/api_service.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class WfaCheckOutScreen extends StatefulWidget {
@@ -133,11 +133,7 @@ class _WfaCheckOutScreenState extends State<WfaCheckOutScreen> {
       final userId = prefs.getInt('user_id');
       if (userId == null) throw Exception("Sesi berakhir, mohon login ulang.");
 
-      final response = await _apiService.submitCheckOut(
-        userId,
-        File(_capturedImage!.path),
-        _currentPosition!,
-      );
+      final response = await _apiService.submitCheckOut(userId, File(_capturedImage!.path), _currentPosition!, _currentAddress);
       
       if(mounted){
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response['message']), backgroundColor: Colors.green));

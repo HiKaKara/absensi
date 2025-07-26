@@ -5,7 +5,7 @@ import 'package:camera/camera.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:absensi/pegawai/services/api_service.dart';
+import 'package:absensi/services/api_service.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class WfoCheckOutScreen extends StatefulWidget {
@@ -26,6 +26,7 @@ class _WfoCheckOutScreenState extends State<WfoCheckOutScreen> {
   String _currentShift = "Memuat shift...";
   bool _isSubmitting = false;
   final ApiService _apiService = ApiService();
+  final TextEditingController _checklistController = TextEditingController();
 
   @override
   void initState() {
@@ -143,6 +144,13 @@ class _WfoCheckOutScreenState extends State<WfoCheckOutScreen> {
       );
       return;
     }
+    if (_checklistController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Checklist kegiatan hari ini wajib diisi.'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+    if (_capturedImage == null || _currentPosition == null || _isSubmitting) return;
 
     setState(() => _isSubmitting = true);
     try {
@@ -154,7 +162,27 @@ class _WfoCheckOutScreenState extends State<WfoCheckOutScreen> {
         userId,
         File(_capturedImage!.path),
         _currentPosition!,
+        _currentAddress,
+        _checklistController.text, // Kirim data checklist
       );
+      
+      if(mounted){
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response['message']), backgroundColor: Colors.green));
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceAll("Exception: ", "")), backgroundColor: Colors.red));
+    } finally {
+      if(mounted) setState(() => _isSubmitting = false);
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('user_id');
+      if (userId == null) throw Exception("Sesi berakhir, mohon login ulang.");
+
+      final response = await _apiService.submitCheckOut(userId, File(_capturedImage!.path), _currentPosition!, _currentAddress);
       
       if(mounted){
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response['message']), backgroundColor: Colors.green));
@@ -259,6 +287,19 @@ class _WfoCheckOutScreenState extends State<WfoCheckOutScreen> {
                 ? const CircularProgressIndicator(color: Colors.white)
                 : const Text('SUBMIT CHECK OUT', style: TextStyle(fontSize: 16)),
           ),
+          _buildSectionCard(
+            title: 'Checklist Kegiatan Hari Ini',
+            icon: Icons.checklist,
+            content: TextFormField(
+              controller: _checklistController,
+              maxLines: 5,
+              decoration: const InputDecoration(
+                hintText: 'Tuliskan kegiatan apa saja yang sudah Anda selesaikan hari ini...',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
         ],
       ),
     );

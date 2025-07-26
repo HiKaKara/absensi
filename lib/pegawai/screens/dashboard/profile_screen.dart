@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:absensi/pegawai/services/api_service.dart';
+import 'package:absensi/services/api_service.dart';
 import 'package:absensi/selection_screen.dart'; // Import halaman awal
 
 class ProfileScreen extends StatefulWidget {
@@ -19,7 +19,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? _errorMessage;
 
   // URL dasar untuk menampilkan gambar dari server CI
-  final String _imageUrlBase = 'http://10.14.72.31:8080/uploads/avatars/';
+  final String _imageUrlBase = 'http://192.168.1.5:8080/uploads/avatars/';
 
   @override
   void initState() {

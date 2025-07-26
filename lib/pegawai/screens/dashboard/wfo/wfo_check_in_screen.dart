@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:absensi/pegawai/services/api_service.dart';
+import 'package:absensi/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:geolocator/geolocator.dart';
@@ -16,10 +16,8 @@ class WfoCheckInScreen extends StatefulWidget {
 }
 
 class _WfoCheckInScreenState extends State<WfoCheckInScreen> {
-  // BARU: Satu Future untuk mengelola semua proses inisialisasi
   late Future<void> _initializationFuture;
 
-  // State lainnya tetap sama
   CameraController? _cameraController;
   XFile? _capturedImage;
   Position? _currentPosition;
@@ -32,7 +30,6 @@ class _WfoCheckInScreenState extends State<WfoCheckInScreen> {
   @override
   void initState() {
     super.initState();
-    // Panggil satu fungsi utama untuk memulai semua proses async
     _initializationFuture = _initializePage();
   }
 
@@ -42,19 +39,14 @@ class _WfoCheckInScreenState extends State<WfoCheckInScreen> {
     super.dispose();
   }
 
-  // --- LOGIKA UTAMA ---
-
-  // BARU: Fungsi ini menggabungkan semua tugas berat
   Future<void> _initializePage() async {
     try {
-      // Jalankan semua proses secara bersamaan untuk efisiensi
       await Future.wait([
         _initializeCamera(),
         _initializeLocation(),
       ]);
-      _determineShift(); // Ini adalah fungsi sinkron, bisa dipanggil setelahnya
+      _determineShift();
     } catch (e) {
-      // Jika salah satu gagal, seluruh Future akan gagal dan ditangkap oleh FutureBuilder
       throw Exception('Gagal memuat halaman: ${e.toString().replaceAll("Exception: ", "")}');
     }
   }
@@ -132,9 +124,17 @@ class _WfoCheckInScreenState extends State<WfoCheckInScreen> {
   }
 
   Future<void> _submitCheckIn() async {
-    if (_capturedImage == null || _currentPosition == null || _isSubmitting) return;
+    // PERBAIKAN: Validasi input sebelum mengirim
+    if (_isSubmitting) return;
+    if (_capturedImage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silakan ambil foto terlebih dahulu.'), backgroundColor: Colors.orange));
+      return;
+    }
+    if (_currentPosition == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lokasi tidak ditemukan. Pastikan GPS aktif.'), backgroundColor: Colors.orange));
+      return;
+    }
 
-    // VALIDASI JARAK KHUSUS WFO
     const double officeLatitude = -6.342621240893616;
     const double officeLongitude = 106.78842019412906;
     const double maxDistanceInMeters = 100;
@@ -157,6 +157,7 @@ class _WfoCheckInScreenState extends State<WfoCheckInScreen> {
       final userId = prefs.getInt('user_id');
       if (userId == null) throw Exception("Sesi berakhir, mohon login ulang.");
 
+      print("Mengirim data WFO Check-in untuk user ID: $userId");
       final response = await _apiService.submitCheckIn(
         userId: userId,
         imageFile: File(_capturedImage!.path),
@@ -167,17 +168,17 @@ class _WfoCheckInScreenState extends State<WfoCheckInScreen> {
       );
       
       if(mounted){
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response['message']), backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response['message'] ?? 'Check In Berhasil'), backgroundColor: Colors.green));
         Navigator.pop(context);
       }
     } catch (e) {
+      print("Error saat submit WFO Check-in: $e");
       if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceAll("Exception: ", "")), backgroundColor: Colors.red));
     } finally {
       if(mounted) setState(() => _isSubmitting = false);
     }
   }
 
-  // --- UI (Tampilan) ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -290,7 +291,7 @@ class _WfoCheckInScreenState extends State<WfoCheckInScreen> {
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: _submitCheckIn,
+            onPressed: _isSubmitting ? null : _submitCheckIn,
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               backgroundColor: Colors.indigo,

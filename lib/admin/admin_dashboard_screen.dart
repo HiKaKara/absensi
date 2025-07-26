@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-// Import halaman-halaman admin lainnya di sini
+import 'package:absensi/admin/admin_home_dashboard_screen.dart'; // Import halaman baru
+import 'package:absensi/admin/employee_data_screen.dart';
+import 'package:absensi/pegawai/screens/dashboard/profile_screen.dart';
+import 'package:absensi/pegawai/screens/dashboard/history_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -10,12 +13,12 @@ class AdminDashboardScreen extends StatefulWidget {
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   int _selectedIndex = 0;
 
-  // Daftar halaman untuk admin
+  // PERBAIKAN: Ganti halaman pertama dengan dashboard baru
   static const List<Widget> _adminPages = <Widget>[
-    Text('Halaman Dashboard Admin'), // Ganti dengan widget dashboard admin
-    Text('Halaman History Presensi Admin'), // Ganti dengan widget history admin
-    Text('Halaman Data Pegawai'), // Ganti dengan widget data pegawai
-    Text('Halaman Profil Admin'), // Ganti dengan widget profil admin
+    AdminHomeDashboardScreen(), // <-- Halaman Dashboard
+    HistoryScreen(),            // <-- Bisa menggunakan HistoryScreen yang sama
+    EmployeeDataScreen(),       // <-- Halaman Data Pegawai
+    ProfileScreen(),            // <-- Bisa menggunakan ProfileScreen yang sama
   ];
 
   void _onItemTapped(int index) {
@@ -42,6 +45,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         unselectedItemColor: Colors.grey,
         showUnselectedLabels: true,
         onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed, // Agar label selalu terlihat
       ),
     );
   }
