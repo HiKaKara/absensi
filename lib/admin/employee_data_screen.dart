@@ -31,7 +31,6 @@ class _EmployeeDataScreenState extends State<EmployeeDataScreen> {
       context,
       MaterialPageRoute(builder: (context) => page),
     );
-    // Jika halaman add/edit mengembalikan true, muat ulang data
     if (result == true) {
       _loadEmployees();
     }

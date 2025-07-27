@@ -394,71 +394,71 @@ class ApiService {
     }
   }
   Future<List<dynamic>> fetchAllAttendanceHistory() async {
-        final url = Uri.parse('${_baseUrl}admin/attendance-history');
-        try {
-            final response = await http.get(url);
-            if (response.statusCode == 200) {
-                return jsonDecode(response.body);
-            } else {
-                throw Exception('Gagal memuat riwayat absensi.');
-            }
-        } catch (e) {
-            throw Exception(e.toString());
-        }
+    final url = Uri.parse('${_baseUrl}admin/attendance-history');
+    try {
+      final response = await http.get(url).timeout(const Duration(seconds: 20));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Gagal memuat riwayat absensi semua pegawai.');
+      }
+    } catch (e) {
+      throw Exception(e.toString());
     }
+  }
 
     Future<List<dynamic>> fetchAllOvertimeHistory() async {
-        final url = Uri.parse('${_baseUrl}admin/overtime-history');
-        try {
-            final response = await http.get(url);
-            if (response.statusCode == 200) {
-                return jsonDecode(response.body);
-            } else {
-                throw Exception('Gagal memuat riwayat lembur.');
-            }
-        } catch (e) {
-            throw Exception(e.toString());
-        }
+    final url = Uri.parse('${_baseUrl}admin/overtime-history');
+    try {
+      final response = await http.get(url).timeout(const Duration(seconds: 20));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Gagal memuat riwayat lembur semua pegawai.');
+      }
+    } catch (e) {
+      throw Exception(e.toString());
     }
+  }
 
-    Future<Map<String, dynamic>> addEmployee(String name, String email, String password, String role) async {
-        final url = Uri.parse('${_baseUrl}admin/employees');
-        try {
-            final response = await http.post(
-                url,
-                headers: {'Content-Type': 'application/json; charset=UTF-8'},
-                body: jsonEncode({
-                    'name': name,
-                    'email': email,
-                    'password': password,
-                    'role': role,
-                }),
-            );
-            return jsonDecode(response.body);
-        } catch (e) {
-            throw Exception('Gagal menambahkan pegawai: ${e.toString()}');
-        }
+  Future<Map<String, dynamic>> addEmployee(String name, String email, String password, String role) async {
+    final url = Uri.parse('${_baseUrl}admin/employees');
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json; charset=UTF-8'},
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'password': password,
+          'role': role,
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      throw Exception('Gagal menambahkan pegawai: ${e.toString()}');
     }
+  }
 
-    Future<Map<String, dynamic>> updateEmployee(int id, String name, String role, {String? password}) async {
-        final url = Uri.parse('${_baseUrl}admin/employees/$id');
-        try {
-            Map<String, dynamic> body = {
-                'name': name,
-                'role': role,
-            };
-            if (password != null && password.isNotEmpty) {
-                body['password'] = password;
-            }
+  Future<Map<String, dynamic>> updateEmployee(int id, String name, String role, {String? password}) async {
+    final url = Uri.parse('${_baseUrl}admin/employees/$id');
+    try {
+      Map<String, dynamic> body = {
+        'name': name,
+        'role': role,
+      };
+      if (password != null && password.isNotEmpty) {
+        body['password'] = password;
+      }
 
-            final response = await http.put(
-                url,
-                headers: {'Content-Type': 'application/json; charset=UTF-8'},
-                body: jsonEncode(body),
-            );
-            return jsonDecode(response.body);
-        } catch (e) {
-            throw Exception('Gagal memperbarui pegawai: ${e.toString()}');
-        }
+      final response = await http.put(
+        url,
+        headers: {'Content-Type': 'application/json; charset=UTF-8'},
+        body: jsonEncode(body),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      throw Exception('Gagal memperbarui pegawai: ${e.toString()}');
     }
+  }
 }
