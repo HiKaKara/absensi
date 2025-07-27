@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:absensi/admin/admin_home_dashboard_screen.dart';
 import 'package:absensi/admin/employee_data_screen.dart';
 import 'package:absensi/pegawai/screens/dashboard/profile_screen.dart';
-import 'package:absensi/admin/history_screen.dart';
+import 'package:absensi/admin/admin_history_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});

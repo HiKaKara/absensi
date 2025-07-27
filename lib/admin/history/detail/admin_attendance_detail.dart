@@ -1,68 +1,190 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
-import 'package:absensi/services/api_service.dart';
 
+class AdminAttendanceDetail extends StatelessWidget {
+  final Map<String, dynamic> historyData;
 
-class AdminAttendanceScreen extends StatefulWidget {
-  const AdminAttendanceScreen({super.key});
+  const AdminAttendanceDetail({super.key, required this.historyData});
 
-  @override
-  State<AdminAttendanceScreen> createState() => _AdminAttendanceScreenState();
-}
-
-class _AdminAttendanceScreenState extends State<AdminAttendanceScreen> {
-  final ApiService _apiService = ApiService();
-  late Future<List<dynamic>> _historyFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _historyFuture = _apiService.fetchAllAttendanceHistory();
+  // Helper untuk memformat tanggal
+  String _formatDate(String? date) {
+    if (date == null || date.isEmpty) return 'Tanggal Tidak Ada';
+    try {
+      return DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(DateTime.parse(date));
+    } catch (e) {
+      return date;
+    }
   }
 
-  String _formatDate(String? date) {
-    if (date == null) return 'N/A';
-    return DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(DateTime.parse(date));
+  // Helper untuk memformat waktu
+  String _formatTime(String? time) {
+    if (time == null || time.isEmpty) return 'Belum Absen';
+    try {
+      return DateFormat('HH:mm:ss', 'id_ID').format(DateFormat('HH:mm:ss').parse(time));
+    } catch (e) {
+      return time;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<dynamic>>(
-      future: _historyFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        }
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text('Tidak ada riwayat presensi.'));
-        }
-        final historyList = snapshot.data!;
-        return ListView.builder(
-          itemCount: historyList.length,
-          itemBuilder: (context, index) {
-            final history = historyList[index];
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ListTile(
-                title: Text(history['name'] ?? 'Tanpa Nama'),
-                subtitle: Text(_formatDate(history['attendance_date'])),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AdminAttendanceDetail(historyData: history),
-                    ),
-                  );
-                },
-              ),
-            );
-          },
-        );
-      },
+    // URL dasar untuk gambar. Ganti IP jika perlu.
+    const String imageUrlBase = 'http://192.168.1.5:8080/uploads/attendances/';
+    final String photoInUrl = historyData['photo_in'] != null ? imageUrlBase + historyData['photo_in'] : '';
+    final String photoOutUrl = historyData['photo_out'] != null ? imageUrlBase + historyData['photo_out'] : '';
+
+    final LatLng checkInLocation = LatLng(
+      double.tryParse(historyData['latitude_in']?.toString() ?? '0') ?? 0,
+      double.tryParse(historyData['longitude_in']?.toString() ?? '0') ?? 0,
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Detail Presensi ${historyData['name'] ?? ''}'),
+        backgroundColor: Colors.indigo,
+        foregroundColor: Colors.white,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDetailCard(
+              title: 'Informasi Presensi',
+              icon: Icons.info_outline,
+              children: [
+                _buildInfoRow('Nama Pegawai', historyData['name'] ?? '-'),
+                _buildInfoRow('Tanggal', _formatDate(historyData['attendance_date'])),
+                _buildInfoRow('Shift', historyData['shift'] ?? '-'),
+                _buildInfoRow('Tipe', historyData['work_location_type'] ?? '-'),
+                _buildInfoRow('Jam Masuk', _formatTime(historyData['time_in'])),
+                _buildInfoRow('Jam Pulang', _formatTime(historyData['time_out'])),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildDetailCard(
+              title: 'Foto Presensi',
+              icon: Icons.photo_camera,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildPhotoViewer('Foto Masuk', photoInUrl),
+                    _buildPhotoViewer('Foto Pulang', photoOutUrl),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildDetailCard(
+              title: 'Lokasi Presensi',
+              icon: Icons.location_on_outlined,
+              children: [
+                Text(historyData['address_in'] ?? 'Alamat tidak tercatat'),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 200,
+                  child: (checkInLocation.latitude == 0 && checkInLocation.longitude == 0)
+                      ? const Center(child: Text("Data lokasi tidak tersedia."))
+                      : GoogleMap(
+                          initialCameraPosition: CameraPosition(
+                            target: checkInLocation,
+                            zoom: 16,
+                          ),
+                          markers: {
+                            Marker(
+                              markerId: const MarkerId('attendanceLocation'),
+                              position: checkInLocation,
+                            ),
+                          },
+                          scrollGesturesEnabled: false,
+                          zoomGesturesEnabled: false,
+                        ),
+                ),
+              ],
+            ),
+             const SizedBox(height: 16),
+            _buildDetailCard(
+              title: 'Checklist Kegiatan',
+              icon: Icons.checklist,
+              children: [
+                Text(historyData['checkout_checklist'] ?? 'Tidak ada checklist kegiatan.'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailCard({required String title, required IconData icon, required List<Widget> children}) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: Colors.indigo.shade700),
+                const SizedBox(width: 8),
+                Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const Divider(height: 24),
+            ...children,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.grey)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPhotoViewer(String title, String imageUrl) {
+    return Column(
+      children: [
+        Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Container(
+          width: 120,
+          height: 160,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: imageUrl.isNotEmpty
+                ? Image.network(
+                    imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 40));
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(child: CircularProgressIndicator());
+                    },
+                  )
+                : const Center(child: Icon(Icons.photo, color: Colors.grey, size: 40)),
+          ),
+        ),
+      ],
     );
   }
 }

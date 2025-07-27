@@ -12,7 +12,7 @@ class HistoryScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Riwayat Pegawai'),
-          automaticallyImplyLeading: false, // Menghapus tombol kembali
+          automaticallyImplyLeading: false,
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Presensi', icon: Icon(Icons.calendar_today)),
@@ -22,7 +22,6 @@ class HistoryScreen extends StatelessWidget {
         ),
         body: const TabBarView(
           children: [
-            // Arahkan ke halaman list khusus admin yang baru
             AdminAttendanceScreen(),
             AdminOvertimeScreen(),
           ],
