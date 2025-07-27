@@ -25,6 +25,7 @@ class _WfaCheckOutScreenState extends State<WfaCheckOutScreen> {
   final Completer<GoogleMapController> _mapController = Completer();
   String _currentShift = "Memuat shift...";
   bool _isSubmitting = false;
+  final TextEditingController _checklistController = TextEditingController();
   final ApiService _apiService = ApiService();
 
   @override
@@ -127,14 +128,27 @@ class _WfaCheckOutScreenState extends State<WfaCheckOutScreen> {
   Future<void> _submitCheckOut() async {
     if (_capturedImage == null || _currentPosition == null || _isSubmitting) return;
 
+    if (_checklistController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Checklist kegiatan hari ini wajib diisi.'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+    if (_capturedImage == null || _currentPosition == null || _isSubmitting) return;
+
     setState(() => _isSubmitting = true);
     try {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getInt('user_id');
       if (userId == null) throw Exception("Sesi berakhir, mohon login ulang.");
 
-      final response = await _apiService.submitCheckOut(userId, File(_capturedImage!.path), _currentPosition!, _currentAddress);
-      
+      final response = await _apiService.submitCheckOut(
+        userId, // Pass userId
+        File(_capturedImage!.path),
+        _currentPosition!,
+        _currentAddress,
+        _checklistController.text, // Kirim data checklist
+      );
       if(mounted){
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response['message']), backgroundColor: Colors.green));
         Navigator.pop(context);
@@ -226,6 +240,20 @@ class _WfaCheckOutScreenState extends State<WfaCheckOutScreen> {
               ],
             ),
           ),
+          const SizedBox(height: 16),
+          _buildSectionCard(
+            title: 'Checklist Kegiatan Hari Ini',
+            icon: Icons.checklist,
+            content: TextFormField(
+              controller: _checklistController,
+              maxLines: 5,
+              decoration: const InputDecoration(
+                hintText: 'Tuliskan kegiatan apa saja yang sudah Anda selesaikan hari ini...',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: _isSubmitting ? null : _submitCheckOut,

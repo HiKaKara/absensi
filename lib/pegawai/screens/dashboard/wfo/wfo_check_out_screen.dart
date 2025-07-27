@@ -182,7 +182,7 @@ class _WfoCheckOutScreenState extends State<WfoCheckOutScreen> {
       final userId = prefs.getInt('user_id');
       if (userId == null) throw Exception("Sesi berakhir, mohon login ulang.");
 
-      final response = await _apiService.submitCheckOut(userId, File(_capturedImage!.path), _currentPosition!, _currentAddress);
+      final response = await _apiService.submitCheckOut(userId, File(_capturedImage!.path), _currentPosition!, _currentAddress, _checklistController.text);
       
       if(mounted){
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response['message']), backgroundColor: Colors.green));

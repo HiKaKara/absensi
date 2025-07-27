@@ -29,6 +29,7 @@ class _AdminHomeDashboardScreenState extends State<AdminHomeDashboardScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Admin Dashboard'),
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
