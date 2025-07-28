@@ -38,6 +38,8 @@ class _OverTimeScreenState extends State<OverTimeScreen> {
   List<dynamic> _userList = [];
   Map<String, dynamic>? _selectedCoworker;
   bool _showRekanKerjaField = false;
+  final _keteranganController = TextEditingController();
+
 
   final List<String> _overtimeTypes = [
     'Hari Kerja', 'Hari Libur', 'Hari Libur Nasional', 'Backup Teman Kerja'
@@ -53,6 +55,7 @@ class _OverTimeScreenState extends State<OverTimeScreen> {
   @override
   void dispose() {
     _cameraController?.dispose();
+    _keteranganController.dispose();
     super.dispose();
   }
 
@@ -81,8 +84,6 @@ class _OverTimeScreenState extends State<OverTimeScreen> {
       }
     } catch (e) {
       print("Gagal memuat pengguna: $e");
-      // Tidak melempar error agar halaman tetap bisa dimuat
-      // meskipun daftar rekan kerja gagal didapat.
     }
   }
 
@@ -189,17 +190,18 @@ class _OverTimeScreenState extends State<OverTimeScreen> {
     final coworkerId = _selectedCoworker?['id'];
 
     // 3. Kirim data ke API
-    final response = await _apiService.submitOvertime(
-      userId: userId,
-      overtimeType: _selectedOvertimeType!,
-      startDate: _startDate!,
-      endDate: _endDate!,
-      startTime: _startTime!,
-      endTime: _endTime!,
-      imageFile: File(_capturedImage!.path),
-      position: _currentPosition!,
-      address: _currentAddress,
-      coworkerId: coworkerId != null ? int.parse(coworkerId.toString()) : null,
+    await _apiService.submitOvertime(
+        userId: userId,
+        overtimeType: _selectedOvertimeType!,
+        startDate: _startDate!,
+        endDate: _endDate!,
+        startTime: _startTime!,
+        endTime: _endTime!,
+        keterangan: _keteranganController.text,
+        imageFile: File(_capturedImage!.path),
+        position: _currentPosition!,
+        address: _currentAddress,
+        coworkerId: coworkerId != null ? int.parse(coworkerId.toString()) : null,
     );
 
     // 4. Handle respons jika berhasil

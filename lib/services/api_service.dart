@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
 class ApiService {
@@ -345,10 +346,13 @@ class ApiService {
     required File imageFile,
     required Position position,
     required String address,
+    required String keterangan,
     int? coworkerId,
   }) async {
+    final token = await _getAuthToken();
     final url = Uri.parse('${_baseUrl}overtime/submit');
-    var request = http.MultipartRequest('POST', url);
+    var request = http.MultipartRequest('POST', url)
+      ..headers['Authorization'] = 'Bearer $token';
 
     String formatTimeOfDay(TimeOfDay tod) {
       final now = DateTime.now();
@@ -365,6 +369,7 @@ class ApiService {
     request.fields['location_address'] = address;
     request.fields['latitude'] = position.latitude.toString();
     request.fields['longitude'] = position.longitude.toString();
+    request.fields['keterangan'] = keterangan;
     if (coworkerId != null) {
       request.fields['coworker_id'] = coworkerId.toString();
     }
@@ -394,6 +399,29 @@ class ApiService {
       throw Exception(e.toString());
     }
   }
+
+  Future<Map<String, dynamic>> updateOvertimeStatus(String overtimeId, String status) async {
+    final token = await _getAuthToken();
+    final url = Uri.parse('$_baseUrl/admin/overtime/status/$overtimeId');
+
+    final response = await http.put(
+      url,
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer $token',
+      },
+      body: json.encode({'status': status}),
+    );
+
+    final responseBody = json.decode(response.body);
+    if (response.statusCode == 200) {
+      return responseBody;
+    } else {
+      final errorMessage = responseBody['messages']?['error'] ?? 'Gagal memperbarui status.';
+      throw Exception(errorMessage);
+    }
+  }
+  
   Future<List<dynamic>> fetchAllAttendanceHistory() async {
     final url = Uri.parse('${_baseUrl}admin/attendance-history');
     try {
@@ -461,5 +489,11 @@ class ApiService {
     } catch (e) {
       throw Exception('Gagal memperbarui pegawai: ${e.toString()}');
     }
+  }
+
+  // Helper method to get authentication token from SharedPreferences
+  Future<String?> _getAuthToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('token'); // Assuming 'token' is where you store the auth token
   }
 }
