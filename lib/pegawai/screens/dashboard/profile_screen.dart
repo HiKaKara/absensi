@@ -19,7 +19,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? _errorMessage;
 
   // URL dasar untuk menampilkan gambar dari server CI
-  final String _imageUrlBase = 'http://192.168.1.5:8080/uploads/avatars/';
+  // final String _imageUrlBase = 'http://192.168.1.5:8080/uploads/avatars/';
+  final String _imageUrlBase = 'http://10.14.72.250:8080/uploads/avatars/';
 
   @override
   void initState() {

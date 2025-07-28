@@ -31,7 +31,8 @@ class AttendanceDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     // --- PERBAIKAN PENTING ---
     // 1. Tentukan URL dasar untuk gambar. Ganti IP jika perlu.
-    const String imageUrlBase = 'http://192.168.1.5:8080/uploads/attendances/';
+    // const String imageUrlBase = 'http://192.168.1.5:8080/uploads/attendances/';
+    const String imageUrlBase = 'http://10.14.72.250:8080/uploads/attendances/';
 
     // 2. Bangun URL lengkap dengan aman, tangani jika nama file null
     final String photoInUrl = historyData['photo_in'] != null ? imageUrlBase + historyData['photo_in'] : '';
@@ -107,6 +108,16 @@ class AttendanceDetailScreen extends StatelessWidget {
                           scrollGesturesEnabled: false,
                           zoomGesturesEnabled: false,
                         ),
+                ),
+              ],
+            ),
+            _buildDetailCard(
+              title: 'Checklist Kegiatan',
+              icon: Icons.checklist,
+              children: [
+                // Menggunakan data 'checkout_checklist' dari historyData
+                Text(historyData['checkout_checklist'] ?? 'Tidak ada checklist kegiatan.',
+                  style: const TextStyle(fontSize: 14),
                 ),
               ],
             ),

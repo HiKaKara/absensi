@@ -7,8 +7,9 @@ import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 
 class ApiService {
-  // PASTIKAN ALAMAT IP INI SUDAH BENAR
-  static const String _baseUrl = 'http://192.168.1.5:8080/api/';
+
+  // static const String _baseUrl = 'http://192.168.1.5:8080/api/';
+  static const String _baseUrl = 'http://10.14.72.250:8080/api/';
 
   Future<void> validateWfoIp() async {
     final url = Uri.parse('${_baseUrl}attendance/validate-wfo-ip');
