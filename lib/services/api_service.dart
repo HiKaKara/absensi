@@ -10,7 +10,7 @@ import 'package:intl/intl.dart';
 class ApiService {
 
   // static const String _baseUrl = 'http://192.168.1.5:8080/api/';
-  static const String _baseUrl = 'http://10.14.72.250:8080/api/';
+  static const String _baseUrl = 'http://10.14.72.47:8080/api/';
 
   Future<void> validateWfoIp() async {
     final url = Uri.parse('${_baseUrl}attendance/validate-wfo-ip');
@@ -301,7 +301,8 @@ class ApiService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      throw Exception('Gagal memuat riwayat presensi.');
+      print('SERVER ERROR DETAIL: ${response.body}'); 
+    throw Exception('Gagal memuat riwayat presensi.');
     }
   } on SocketException {
       throw Exception('Tidak dapat terhubung ke server. Periksa koneksi Anda.');

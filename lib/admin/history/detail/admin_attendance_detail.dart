@@ -31,7 +31,7 @@ class AdminAttendanceDetail extends StatelessWidget {
   Widget build(BuildContext context) {
     // URL dasar untuk gambar. Ganti IP jika perlu.
     // const String imageUrlBase = 'http://192.168.1.5:8080/uploads/attendances/';
-    const String imageUrlBase = 'http://10.14.72.250:8080/uploads/attendances/';
+    const String imageUrlBase = 'http://10.14.72.47:8080/uploads/attendances/';
     final String photoInUrl = historyData['photo_in'] != null ? imageUrlBase + historyData['photo_in'] : '';
     final String photoOutUrl = historyData['photo_out'] != null ? imageUrlBase + historyData['photo_out'] : '';
 

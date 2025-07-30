@@ -27,7 +27,7 @@ class OvertimeDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // const String imageUrlBase = 'http://192.168.1.5:8080/uploads/overtime_evidence/';
-    const String imageUrlBase = 'http://10.14.72.250:8080/uploads/overtime_evidence/';
+    const String imageUrlBase = 'http://10.14.72.47:8080/uploads/overtime_evidence/';
     final String photoUrl = imageUrlBase + (overtimeData['evidence_photo'] ?? '');
 
     final LatLng overtimeLocation = LatLng(
