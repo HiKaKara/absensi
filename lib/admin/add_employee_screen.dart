@@ -13,6 +13,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _positionController = TextEditingController();
   String _selectedRole = 'pegawai';
   bool _isLoading = false;
 
@@ -23,6 +24,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _positionController.dispose();
     super.dispose();
   }
 
@@ -35,6 +37,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
           _emailController.text,
           _passwordController.text,
           _selectedRole,
+          _positionController.text,
         );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -45,7 +48,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+            SnackBar(content: Text(e.toString().replaceAll("Exception: ", "")), backgroundColor: Colors.red),
           );
         }
       } finally {
@@ -76,6 +79,11 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
               decoration: const InputDecoration(labelText: 'Email'),
               keyboardType: TextInputType.emailAddress,
               validator: (value) => value!.isEmpty || !value.contains('@') ? 'Masukkan email yang valid' : null,
+            ),
+            TextFormField(
+              controller: _positionController,
+              decoration: const InputDecoration(labelText: 'Jabatan (Position)'),
+              validator: (value) => value!.isEmpty ? 'Jabatan tidak boleh kosong' : null,
             ),
             const SizedBox(height: 16),
             TextFormField(

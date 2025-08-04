@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:absensi/services/app_config.dart';
 
 class AdminAttendanceDetail extends StatelessWidget {
   final Map<String, dynamic> historyData;
@@ -29,11 +30,9 @@ class AdminAttendanceDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // URL dasar untuk gambar. Ganti IP jika perlu.
-    // const String imageUrlBase = 'http://192.168.1.5:8080/uploads/attendances/';
-    const String imageUrlBase = 'http://10.14.72.47:8080/uploads/attendances/';
-    final String photoInUrl = historyData['photo_in'] != null ? imageUrlBase + historyData['photo_in'] : '';
-    final String photoOutUrl = historyData['photo_out'] != null ? imageUrlBase + historyData['photo_out'] : '';
+    const String imageUrlPath = AppConfig.imageUrlBase + 'attendances/';
+    final String photoInUrl = historyData['photo_in'] != null ? imageUrlPath + historyData['photo_in'] : '';
+    final String photoOutUrl = historyData['photo_out'] != null ? imageUrlPath + historyData['photo_out'] : '';
 
     final LatLng checkInLocation = LatLng(
       double.tryParse(historyData['latitude_in']?.toString() ?? '0') ?? 0,

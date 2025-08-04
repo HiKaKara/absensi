@@ -207,13 +207,13 @@ class _OverTimeScreenState extends State<OverTimeScreen> {
     // 4. Handle respons jika berhasil
 
     if (mounted) {
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pengajuan lembur berhasil dikirim!'), backgroundColor: Colors.green));
-       
-       // Navigasi kembali ke DashboardScreen dan hapus semua halaman di atasnya
-       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const DashboardScreen()),
-        (Route<dynamic> route) => false,
-      );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pengajuan lembur berhasil dikirim!'), backgroundColor: Colors.green));
+        
+        // Navigasi kembali ke DashboardScreen dan hapus semua halaman di atasnya
+        Navigator.of(context).pushAndRemoveUntil(
+         MaterialPageRoute(builder: (context) => const DashboardScreen()),
+         (Route<dynamic> route) => false,
+       );
     }
 
   } catch (e) {
@@ -338,6 +338,23 @@ class _OverTimeScreenState extends State<OverTimeScreen> {
                       const SizedBox(width: 16),
                       Expanded(child: _buildTimePickerField(context, 'Waktu Selesai', _endTime, false)),
                     ],
+                  ),
+                  const SizedBox(height: 16),
+                  // --- PENAMBAHAN FIELD KETERANGAN ---
+                  TextFormField(
+                    controller: _keteranganController,
+                    decoration: const InputDecoration(
+                      labelText: 'Keterangan Lembur',
+                      hintText: 'Contoh: Menyelesaikan laporan bulanan',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Keterangan wajib diisi';
+                      }
+                      return null;
+                    },
+                    maxLines: 3,
                   ),
                 ],
               ),

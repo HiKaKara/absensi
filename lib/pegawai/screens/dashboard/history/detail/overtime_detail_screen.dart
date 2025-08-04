@@ -7,7 +7,9 @@ class OvertimeDetailScreen extends StatelessWidget {
 
   const OvertimeDetailScreen({super.key, required this.overtimeData});
 
-  String _formatDate(String date) {
+  // Helper untuk memformat tanggal dari YYYY-MM-DD
+  String _formatDate(String? date) {
+    if (date == null || date.isEmpty) return 'Tanggal Tidak Ada';
     try {
       return DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(DateTime.parse(date));
     } catch (e) {
@@ -15,21 +17,51 @@ class OvertimeDetailScreen extends StatelessWidget {
     }
   }
 
+  // Helper untuk memformat waktu dari HH:mm:ss
   String _formatTime(String? time) {
-    if (time == null || time.isEmpty) return 'Belum Absen';
+    if (time == null || time.isEmpty) return 'Waktu Tidak Ada';
     try {
-      return DateFormat('HH:mm:ss', 'id_ID').format(DateFormat('HH:mm:ss').parse(time));
+      // Parsing waktu dari format 24 jam (HH:mm:ss)
+      final parsedTime = DateFormat('HH:mm:ss').parse(time);
+      // Format kembali ke format yang diinginkan
+      return DateFormat('HH:mm', 'id_ID').format(parsedTime);
     } catch (e) {
       return time;
     }
   }
 
+  // Helper untuk mendapatkan warna status
+  Color _getStatusColor(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'approved':
+        return Colors.green;
+      case 'rejected':
+        return Colors.red;
+      default:
+        return Colors.orange;
+    }
+  }
+
+  // Helper untuk mendapatkan teks status
+  String _getStatusText(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'approved':
+        return 'Disetujui';
+      case 'rejected':
+        return 'Ditolak';
+      default:
+        return 'Menunggu Persetujuan';
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
-    // const String imageUrlBase = 'http://192.168.1.5:8080/uploads/overtime_evidence/';
-    const String imageUrlBase = 'http://10.14.72.47:8080/uploads/overtime_evidence/';
-    final String photoUrl = imageUrlBase + (overtimeData['evidence_photo'] ?? '');
+    // Ganti URL dasar jika diperlukan
+    const String imageUrlBase = 'http://10.0.2.2:8080/uploads/overtime_evidence/';
+    final String photoUrl = overtimeData['evidence_photo'] != null ? imageUrlBase + overtimeData['evidence_photo'] : '';
 
+    // Ambil koordinat dengan aman
     final LatLng overtimeLocation = LatLng(
       double.tryParse(overtimeData['latitude']?.toString() ?? '0') ?? 0,
       double.tryParse(overtimeData['longitude']?.toString() ?? '0') ?? 0,
@@ -37,7 +69,7 @@ class OvertimeDetailScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detail Lembur'),
+        title: const Text('Detail Pengajuan Lembur'),
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
       ),
@@ -47,52 +79,64 @@ class OvertimeDetailScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildDetailCard(
-              title: 'Informasi Presensi',
+              title: 'Informasi Lembur',
               icon: Icons.info_outline,
               children: [
-                _buildInfoRow('Tanggal', _formatDate(overtimeData['attendance_date'])),
-                _buildInfoRow('Shift', overtimeData['shift'] ?? '-'),
-                _buildInfoRow('Tipe', overtimeData['work_location_type'] ?? '-'),
-                _buildInfoRow('Jam Masuk', _formatTime(overtimeData['time_in'])),
-                _buildInfoRow('Jam Pulang', _formatTime(overtimeData['time_out'])),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _buildDetailCard(
-              title: 'Foto Presensi',
-              icon: Icons.photo_camera,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildPhotoViewer('Foto', photoUrl)
-                  ],
+                // --- PERBAIKAN: Menampilkan data lembur yang benar ---
+                _buildInfoRow('Nama Pegawai', overtimeData['name'] ?? '-'),
+                _buildInfoRow('Tanggal Mulai', _formatDate(overtimeData['start_date'])),
+                _buildInfoRow('Tanggal Selesai', _formatDate(overtimeData['end_date'])),
+                _buildInfoRow('Jam Mulai', _formatTime(overtimeData['start_time'])),
+                _buildInfoRow('Jam Selesai', _formatTime(overtimeData['end_time'])),
+                _buildInfoRow('Tipe Lembur', overtimeData['overtime_type'] ?? '-'),
+                _buildInfoRow(
+                  'Status', 
+                  _getStatusText(overtimeData['status']),
+                  valueStyle: TextStyle(color: _getStatusColor(overtimeData['status']), fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const SizedBox(height: 16),
             _buildDetailCard(
-              title: 'Lokasi Presensi',
+              title: 'Keterangan',
+              icon: Icons.notes,
+              children: [
+                Text(overtimeData['keterangan'] ?? 'Tidak ada keterangan.', style: const TextStyle(fontSize: 14)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildDetailCard(
+              title: 'Bukti Foto',
+              icon: Icons.photo_camera,
+              children: [
+                Center(child: _buildPhotoViewer('Foto Bukti', photoUrl)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildDetailCard(
+              title: 'Lokasi Lembur',
               icon: Icons.location_on_outlined,
               children: [
-                Text(overtimeData['address'] ?? 'Alamat tidak tercatat'),
+                Text(overtimeData['location_address'] ?? 'Alamat tidak tercatat'),
                 const SizedBox(height: 12),
                 SizedBox(
                   height: 200,
-                  child: GoogleMap(
-                    initialCameraPosition: CameraPosition(
-                      target: overtimeLocation,
-                      zoom: 16,
-                    ),
-                    markers: {
-                      Marker(
-                        markerId: const MarkerId('attendanceLocation'),
-                        position: overtimeLocation,
-                      ),
-                    },
-                    scrollGesturesEnabled: false,
-                    zoomGesturesEnabled: false,
-                  ),
+                  child: (overtimeLocation.latitude == 0 && overtimeLocation.longitude == 0)
+                      ? const Center(child: Text("Data lokasi tidak tersedia."))
+                      : GoogleMap(
+                          initialCameraPosition: CameraPosition(
+                            target: overtimeLocation,
+                            zoom: 16,
+                          ),
+                          markers: {
+                            Marker(
+                              markerId: const MarkerId('overtimeLocation'),
+                              position: overtimeLocation,
+                            ),
+                          },
+                          scrollGesturesEnabled: false,
+                          zoomGesturesEnabled: false,
+                        ),
                 ),
               ],
             ),
@@ -101,6 +145,7 @@ class OvertimeDetailScreen extends StatelessWidget {
       ),
     );
   }
+
 
   // --- Widget Helper untuk UI ---
   Widget _buildDetailCard({required String title, required IconData icon, required List<Widget> children}) {
@@ -127,14 +172,14 @@ class OvertimeDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(String label, String value, {TextStyle? valueStyle}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: const TextStyle(color: Colors.grey)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(value, style: valueStyle ?? const TextStyle(fontWeight: FontWeight.bold)),
         ],
       ),
     );

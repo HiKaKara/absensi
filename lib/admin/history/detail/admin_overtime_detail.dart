@@ -64,7 +64,7 @@ class _AdminOvertimeDetailState extends State<AdminOvertimeDetail> {
 
   @override
   Widget build(BuildContext context) {
-    const String imageUrlBase = 'http://10.14.72.47:8080/uploads/overtime_evidence/';
+    const String imageUrlBase = 'http://10.0.2.2:8080/uploads/overtime_evidence/';
     final String evidencePhotoUrl = _overtimeData['evidence_photo'] != null ? imageUrlBase + _overtimeData['evidence_photo'] : '';
     final bool isPending = _overtimeData['status']?.toLowerCase() == 'pending';
     final LatLng location = LatLng(

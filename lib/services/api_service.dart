@@ -6,11 +6,10 @@ import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:absensi/services/app_config.dart';
 
 class ApiService {
-
-  // static const String _baseUrl = 'http://192.168.1.5:8080/api/';
-  static const String _baseUrl = 'http://10.14.72.47:8080/api/';
+  static const String _baseUrl = AppConfig.baseUrl;
 
   Future<void> validateWfoIp() async {
     final url = Uri.parse('${_baseUrl}attendance/validate-wfo-ip');
@@ -79,16 +78,24 @@ class ApiService {
     try {
         final response = await http.get(url).timeout(const Duration(seconds: 20));
         if (response.statusCode == 200) {
-            return jsonDecode(response.body);
+            return jsonDecode(response.body) as Map<String, dynamic>;
         } else {
-            throw Exception('Gagal memuat data dashboard.');
+            // Coba parse pesan error dari server untuk memberikan feedback yang lebih baik
+            try {
+              final errorData = jsonDecode(response.body);
+              final errorMessage = errorData['messages']?['error'] ?? 'Gagal memuat data dashboard. Status: ${response.statusCode}';
+              throw Exception(errorMessage);
+            } catch (_) {
+              // Jika parsing gagal (misal respons bukan JSON), lempar error generik
+              throw Exception('Gagal memuat data dashboard. Status: ${response.statusCode}');
+            }
         }
     } on TimeoutException {
         throw Exception('Koneksi ke server timeout.');
     } on SocketException {
         throw Exception('Tidak dapat terhubung ke server.');
     } catch (e) {
-        throw Exception(e.toString());
+        rethrow; // Lemparkan kembali error asli agar tidak kehilangan jejak
     }
   }
 
@@ -154,46 +161,59 @@ class ApiService {
     final url = Uri.parse('${_baseUrl}auth/login');
     
     try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-        }),
-      ).timeout(const Duration(seconds: 15));
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/json; charset=UTF-8',
+            },
+            body: jsonEncode({
+              'email': email,
+              'password': password,
+            }),
+          )
+          .timeout(const Duration(seconds: 15));
 
       final responseData = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
         return responseData;
       } else {
-        throw Exception(responseData['messages']['error'] ?? 'Terjadi kesalahan saat login');
+        final errorMessage = responseData['messages']?['error'] ?? 'Login gagal, periksa kembali email dan password Anda.';
+        throw Exception(errorMessage);
       }
     } on TimeoutException {
-      throw Exception('Koneksi ke server timeout. Gagal login.');
+      throw Exception('Koneksi ke server timeout. Pastikan server berjalan dan terhubung ke jaringan yang sama.');
     } on SocketException {
-      throw Exception('Tidak dapat terhubung ke server. Periksa koneksi Anda.');
+      throw Exception('Tidak dapat terhubung ke server. Periksa alamat IP server dan koneksi jaringan Anda.');
+    } on FormatException {
+      throw Exception('Server memberikan respons yang tidak valid. Periksa log di sisi server.');
     } catch (e) {
-      print('Login Error: $e');
-      throw Exception('Gagal login: ${e.toString()}');
+      // Lemparkan kembali error aslinya agar tidak kehilangan konteks
+      rethrow;
     }
   }
   Future<Map<String, dynamic>> fetchUserProfile(int userId) async {
     final url = Uri.parse('${_baseUrl}users/$userId');
     try {
-      final response = await http.get(url);
+      final response = await http.get(url).timeout(const Duration(seconds: 15));
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
-        throw Exception('Gagal memuat profil pengguna.');
+        try {
+          final errorData = jsonDecode(response.body);
+          final errorMessage = errorData['messages']?['error'] ?? 'Gagal memuat profil pengguna. Status: ${response.statusCode}';
+          throw Exception(errorMessage);
+        } catch (_) {
+          throw Exception('Gagal memuat profil pengguna. Status: ${response.statusCode}');
+        }
       }
+    } on TimeoutException {
+      throw Exception('Koneksi ke server timeout saat memuat profil.');
     } on SocketException {
       throw Exception('Tidak dapat terhubung ke server. Periksa koneksi Anda.');
     } catch (e) {
-      throw Exception('Terjadi kesalahan: ${e.toString()}');
+      rethrow;
     }
   }
 
@@ -301,13 +321,20 @@ class ApiService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      print('SERVER ERROR DETAIL: ${response.body}'); 
-    throw Exception('Gagal memuat riwayat presensi.');
+      try {
+        final errorData = jsonDecode(response.body);
+        final errorMessage = errorData['messages']?['error'] ?? 'Gagal memuat riwayat presensi. Status: ${response.statusCode}';
+        throw Exception(errorMessage);
+      } catch (_) {
+        throw Exception('Gagal memuat riwayat presensi. Status: ${response.statusCode}');
+      }
     }
   } on SocketException {
       throw Exception('Tidak dapat terhubung ke server. Periksa koneksi Anda.');
+  } on TimeoutException {
+      throw Exception('Koneksi ke server timeout saat memuat riwayat.');
   } catch (e) {
-    throw Exception(e.toString());
+    rethrow;
   }
 }
   Future<List<dynamic>> fetchOvertimeHistory(
@@ -329,12 +356,20 @@ class ApiService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      throw Exception('Gagal memuat riwayat lembur.');
+      try {
+        final errorData = jsonDecode(response.body);
+        final errorMessage = errorData['messages']?['error'] ?? 'Gagal memuat riwayat lembur. Status: ${response.statusCode}';
+        throw Exception(errorMessage);
+      } catch (_) {
+        throw Exception('Gagal memuat riwayat lembur. Status: ${response.statusCode}');
+      }
     }
+  } on TimeoutException {
+    throw Exception('Koneksi ke server timeout saat memuat riwayat lembur.');
   } on SocketException {
       throw Exception('Tidak dapat terhubung ke server. Periksa koneksi Anda.');
   } catch (e) {
-    throw Exception(e.toString());
+    rethrow;
   }
 }
   Future<Map<String, dynamic>> submitOvertime({
@@ -430,10 +465,17 @@ class ApiService {
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
-        throw Exception('Gagal memuat riwayat absensi semua pegawai.');
+        try {
+          final errorData = jsonDecode(response.body);
+          final errorMessage = errorData['messages']?['error'] ?? 'Gagal memuat riwayat absensi. Status: ${response.statusCode}';
+          throw Exception(errorMessage);
+        } catch (_) {
+          throw Exception('Gagal memuat riwayat absensi. Status: ${response.statusCode}');
+        }
       }
     } catch (e) {
-      throw Exception(e.toString());
+      // Rethrow untuk menangkap TimeoutException, SocketException, dll.
+      rethrow;
     }
   }
 
@@ -451,22 +493,47 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> addEmployee(String name, String email, String password, String role) async {
-    final url = Uri.parse('${_baseUrl}admin/employees');
+  Future<Map<String, dynamic>> addEmployee(String name, String email, String password, String role, String position) async {
+    final url = Uri.parse('$_baseUrl/admin/employees'); // Endpoint untuk create user
+
     try {
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json; charset=UTF-8'},
+        // PERBAIKAN: Tambahkan header dan encode body ke JSON
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
         body: jsonEncode({
           'name': name,
           'email': email,
           'password': password,
           'role': role,
+          'position': position,
         }),
       );
-      return jsonDecode(response.body);
+
+      Map<String, dynamic> responseData;
+      try {
+        responseData = json.decode(response.body);
+      } catch (e) {
+        // Ini terjadi jika body bukan JSON, misal halaman error HTML
+        throw Exception('Server memberikan respons yang tidak valid. Cek log error di API CodeIgniter Anda.');
+      }
+
+      // Gunakan HttpStatus untuk kode yang lebih mudah dibaca
+      if (response.statusCode == 200 || response.statusCode == 201) { // Terima 200 (OK) atau 201 (Created)
+        return responseData;
+      } else {
+        // Ambil pesan error dari JSON dengan aman
+        final errorMessage = responseData['messages']?['error'] ?? 'Terjadi error yang tidak diketahui dari server.';
+        throw Exception(errorMessage);
+      }
+    } on SocketException {
+      // Error jika tidak ada koneksi sama sekali (misal, WiFi mati atau IP salah)
+      throw Exception('Tidak dapat terhubung ke server. Periksa koneksi internet dan alamat IP.');
     } catch (e) {
-      throw Exception('Gagal menambahkan pegawai: ${e.toString()}');
+      // Menangkap semua error lainnya, termasuk yang kita lempar di atas
+      throw Exception(e.toString());
     }
   }
 
